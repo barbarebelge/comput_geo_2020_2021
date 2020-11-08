@@ -104,7 +104,7 @@ function sortPointsRadially(pointArray, leftMostPointIdx) {
     var points = pointArray.slice();
 
     // remove leftmost point to avoid comparison with itself
-    var leftMostPoint = points.splice(leftMostPointIdx, 1);
+    var leftMostPoint = points.splice(leftMostPointIdx, 1)[0];
 
     // define a function that always calls the orient determinant starting from the leftmost point
     // a function with 2 arguments instead of 3 is needed for the sort function
@@ -136,7 +136,7 @@ function getGrahamScanConvexHull(points, leftMostPointIdx) {
     else
     {
         var sortedPoints = sortPointsRadially(points, leftMostPointIdx);
-
+        console.log("sorted points:", sortedPoints);
         convexHullPoints = [sortedPoints[0], sortedPoints[1]];
 
         for (let i = 2; i < sortedPoints.length; ++i) 
