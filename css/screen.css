@@ -1,0 +1,49 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.homework-title {
+  padding: 10px 5px 5px 10px;
+}
+
+.toolbar {
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.toolbar > * {
+  margin: 0px 10px 0px 10px;
+}
+
+/* .toolbar > button {
+  /* height: 100%; 
+}*/
+
+.toolbar > button {
+  padding: 10px;
+}
+
+.point-placement-checkbox:disabled + label {
+  color: grey;
+}
+
+.side-to-side-canvas
+{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 10px 0px 10px;
+}
+
+#left-canvas
+{
+  margin-right: auto;
+}
+/* .point-placement-checkbox {
+  height: 100%;
+  text-align: center;
+} */
