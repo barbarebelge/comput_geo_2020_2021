@@ -309,6 +309,7 @@ function validatePointSet()
 				notifText = "Right canvas's convex hull size does not match the left one";
 				notifColor = FAILURE_RED;
 				rightCanvas.reset();
+				rightCanvas.pointsLimit = leftCanvas.points.length;
 			}
 		}
 
