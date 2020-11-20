@@ -15,6 +15,7 @@ var makeCanvas = function(p) {
 	p.leftMostPointIdx = null;
 	p.pointsLimit = null;
 	p.lastClickedPointIdx = null;
+	p.allInnerSegments = [];
 
 
 	p.reset = function ()
@@ -25,6 +26,7 @@ var makeCanvas = function(p) {
 		p.leftMostPointIdx = null;
 		p.pointsLimit = null;
 		p.lastClickedPointIdx = null;
+		p.allInnerSegments = [];
 		p.redraw();
 	};
 
@@ -46,6 +48,7 @@ var makeCanvas = function(p) {
 		    p.textSize(12);
 		    p.showPoints();
 		    p.showConvexHull();
+		    p.showSegments(p.allInnerSegments); // TMP display
 		}
 	};
 
@@ -93,6 +96,16 @@ var makeCanvas = function(p) {
 							{
 								showNotification("Point limit reached", NOTIF_BLUE);
 								validatePointSet();
+								let polygon = new Polygon(p.convexHullPoints);
+								/* // TO REMOVE: used to verify polygon class and areSegmentPoints()
+								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[1]));
+								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[1],p.convexHullPoints[0]));
+								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[p.convexHullPoints.length-1]));
+								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[p.convexHullPoints.length-1], p.convexHullPoints[0]));
+								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[2]));
+								*/
+								p.allInnerSegments = getAllInnerSegmentsOfPointSet(p.points, p.convexHullPoints);
+								console.log("All inner segments len: " + p.allInnerSegments.length);
 							}
 						}
 					}
@@ -149,6 +162,17 @@ var makeCanvas = function(p) {
 		}
 	};
 
+	/** Display a list of segments */
+	p.showSegments = function(segments){
+		p.push();
+		p.stroke("red");
+		p.strokeWeight(2);
+		for (let i = 0; i < segments.length; i++){
+			let seg = segments[i];
+			p.line(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
+		}
+		p.pop();
+	}
 
 	/** Draws a simple line between two points. */
 	p.connectPoints = function (pt1, pt2) {

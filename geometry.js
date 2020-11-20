@@ -40,6 +40,34 @@ class Segment {
   }
 }
 
+class Polygon{
+    /**
+    * @param [list of points] points: the points of the polygon ordered in counter clockwise order 
+    */
+    constructor(points){
+        this.points = points;
+        this.segments = [];
+        for(let i = 0; i < points.length; i++){
+            let i2 = (i+1) % points.length;
+            let segment = new Segment(points[i], points[i2]);
+            this.segments.push(segment);
+        }
+    }
+    /**
+    * @param [point] p1
+    * @param [point] p2
+    * @return [bool] true if the points p1 and p2 are points of a polygon segment otherwise return false
+    */
+    areSegmentPoints(p1, p2){
+        for (let i = 0; i < this.segments.length; i++){
+            if((p1 === this.segments[i].p1 && this.segments[i].p2 === p2) 
+                || (p2 === this.segments[i].p1 && this.segments[i].p2 === p1)){
+                return true;
+            }
+        }
+        return false;
+    }
+}
 
 const ORIENT = {
     LEFT: "Left-turn",
@@ -152,4 +180,54 @@ function getGrahamScanConvexHull(points, leftMostPointIdx) {
     }
     
     return convexHullPoints;
+}
+
+
+/**
+* Check if two segments have the same endpoints, 
+* if yes, they are equivalent.
+* @param [segment] seg1
+* @param [segment] seg2
+* @return [bool] true if seg1 is equivalent to seg2.
+*/
+function areSegmentsEq(seg1, seg2){
+    if((seg1.p1 === seg2.p1 && seg1.p2 === seg2.p2) ||
+        (seg1.p2 === seg2.p1 && seg1.p1 === seg2.p2)){
+        return true;
+    }
+    return false;
+}
+
+/**
+* Find all the possible inner segments/edges of the point which are inside its convex hull.
+* All the segments/edges that can be drawn in the convex hull of the points set.
+* The intersecting segments are allowed.
+* @param [list of points] pointSet 
+* @param [list of points] convexHullPoints
+* @return [list of segments] innerSegments
+*/
+function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints){
+    // Complexity O(n^3)
+    let polygonCH = new Polygon(convexHullPoints);
+    let innerSegments = []; 
+    for(p1 of pointSet){ // Browse all pair of points
+        for(p2 of pointSet){
+            // If points are different, not forming a segment of CH and not already in list:
+            // save the segment formed by the points in the innerSegments list. 
+            if(p1 !== p2 && !polygonCH.areSegmentPoints(p1, p2)){
+                let newSegment = new Segment(p1, p2);
+                let inList = false;
+                for (let i = 0; i < innerSegments.length; i++){
+                    if(areSegmentsEq(newSegment, innerSegments[i])){
+                        inList = true;
+                        break;
+                    }
+                }
+                if(!inList){
+                    innerSegments.push(newSegment);
+                }
+            }
+        }
+    }
+    return innerSegments;
 }
