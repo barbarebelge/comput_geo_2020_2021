@@ -16,6 +16,7 @@ var makeCanvas = function(p) {
 	p.pointsLimit = null;
 	p.lastClickedPointIdx = null;
 	p.allInnerSegments = [];
+	p.allInnerSegmentsCombinations = []; 
 
 
 	p.reset = function ()
@@ -27,6 +28,7 @@ var makeCanvas = function(p) {
 		p.pointsLimit = null;
 		p.lastClickedPointIdx = null;
 		p.allInnerSegments = [];
+		p.allInnerSegmentsCombinations = [];
 		p.redraw();
 	};
 
@@ -48,7 +50,11 @@ var makeCanvas = function(p) {
 		    p.textSize(12);
 		    p.showPoints();
 		    p.showConvexHull();
-		    p.showSegments(p.allInnerSegments); // TMP display
+		    //p.showSegments(p.allInnerSegments); // TMP display
+		    if(p.allInnerSegmentsCombinations.length != 0){ // TMP display
+		    	p.showSegments(p.allInnerSegmentsCombinations[p.allInnerSegmentsCombinations.length-1]);
+		    	// the last combination is using all the inner segments
+			}
 		}
 	};
 
@@ -96,8 +102,8 @@ var makeCanvas = function(p) {
 							{
 								showNotification("Point limit reached", NOTIF_BLUE);
 								validatePointSet();
-								let polygon = new Polygon(p.convexHullPoints);
 								/* // TO REMOVE: used to verify polygon class and areSegmentPoints()
+								let polygon = new Polygon(p.convexHullPoints);
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[1]));
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[1],p.convexHullPoints[0]));
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[p.convexHullPoints.length-1]));
@@ -106,6 +112,10 @@ var makeCanvas = function(p) {
 								*/
 								p.allInnerSegments = getAllInnerSegmentsOfPointSet(p.points, p.convexHullPoints);
 								console.log("All inner segments len: " + p.allInnerSegments.length);
+								p.allInnerSegmentsCombinations = getAllCombinationsOf(p.allInnerSegments);
+								console.log("All inner segments combinations len: " + p.allInnerSegmentsCombinations.length);
+								//console.log("All Inner Segments Combinations");
+								//console.log(p.allInnerSegmentsCombinations);
 							}
 						}
 					}
@@ -281,6 +291,15 @@ var rightCanvas = new p5(makeCanvas, 'right-canvas');
 rightCanvas.setPointPlacement(false);
 var convexHullSize = null; // size of the first canvas's convex hull
 
+
+// TO REMOVE used to test the Combinator class
+/*
+let combi = new Combinator();
+let l1 = ["a", "b", "c"];
+let l2 = ["a", "b", "c", "d"];
+let combis = combi.getCombinationsOfSizeKFromList(2,l1);
+console.log(combis);
+*/
 
 function validatePointSet()
 {

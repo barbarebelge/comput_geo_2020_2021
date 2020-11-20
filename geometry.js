@@ -231,3 +231,74 @@ function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints){
     }
     return innerSegments;
 }
+
+// Maybe move it to utils.js
+/**
+* Class used to get combinations of size k from a list (n=list.length).
+*/
+class Combinator{
+    constructor(){
+        this.list = [];
+        this.combination = [];
+        this.combinations = [];
+        // bool combination(s) can be removed
+        this.boolCombination = [];
+        this.boolCombinations = [];
+    }
+    findCombinations(offset, k){
+        if(k === 0){
+            //console.log(this.combination);
+            //console.log(this.boolCombination);
+            this.combinations.push(Array.from(this.combination));
+            this.boolCombinations.push(Array.from(this.boolCombination)); // maybe not usefull
+            return true;
+        }
+        for(let i = offset; i <= this.list.length - k; i++){
+            this.combination.push(this.list[i]);
+            this.boolCombination[i] = true;
+            this.findCombinations(i + 1, k - 1);
+            this.combination.pop();
+            this.boolCombination[i] = false;
+        }
+    }
+    getCombinationsOfSizeKFromList(k, list){
+        if (k > list.length){
+            throw new TypeError("k should be <= to the list length.");
+            return null;
+        }
+        else{
+            this.reset();
+            for(let i = 0; i < list.length; i++){
+                this.boolCombination.push(false);
+            }
+            this.list = list;
+            this.findCombinations(0,k);
+            //console.log(this.combinations);
+            //console.log(this.boolCombinations);
+            return Array.from(this.combinations);
+       }
+   }
+    reset(){
+        this.combination = [];
+        this.combinations = [];
+        this.boolCombination = [];
+        this.boolCombinations = [];    
+    }
+}
+
+/**
+* @param [list] list
+* @return [list of lists] a list of combinations of k elements from list variable,
+* where k is going from 1 to list.length (included).
+*/
+function getAllCombinationsOf(list){
+    let combinations = [];
+    let combinator = new Combinator();
+    for(let k = 1; k <= list.length; k++){
+        let combinationsSizeK = combinator.getCombinationsOfSizeKFromList(k, list);
+        for(let i = 0; i < combinationsSizeK.length; i++){
+            combinations.push(combinationsSizeK[i]);
+        }
+    }
+    return combinations;
+}
