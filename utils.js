@@ -8,3 +8,6 @@ function typeOf(obj) {
     .toLowerCase();
 }
 
+function mod(a, n){
+	return ((a % n ) + n ) % n;
+}

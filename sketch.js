@@ -16,7 +16,8 @@ var makeCanvas = function(p) {
 	p.pointsLimit = null;
 	p.lastClickedPointIdx = null;
 	p.allInnerSegments = [];
-	p.allInnerSegmentsCombinations = []; 
+	p.allInnerSegmentsCombinations = [];
+	p.dcelSegments = [];
 
 
 	p.reset = function ()
@@ -29,6 +30,7 @@ var makeCanvas = function(p) {
 		p.lastClickedPointIdx = null;
 		p.allInnerSegments = [];
 		p.allInnerSegmentsCombinations = [];
+		p.dcelSegments = [];
 		p.redraw();
 	};
 
@@ -52,8 +54,11 @@ var makeCanvas = function(p) {
 		    p.showConvexHull();
 		    //p.showSegments(p.allInnerSegments); // TMP display
 		    if(p.allInnerSegmentsCombinations.length != 0){ // TMP display
-		    	p.showSegments(p.allInnerSegmentsCombinations[p.allInnerSegmentsCombinations.length-1]);
+		    	p.showSegments(p.allInnerSegmentsCombinations[p.allInnerSegmentsCombinations.length-1], "red");
 		    	// the last combination is using all the inner segments
+			}
+			if(p.dcelSegments.length != 0){
+				p.showSegments(p.dcelSegments, "blue");
 			}
 		}
 	};
@@ -116,6 +121,10 @@ var makeCanvas = function(p) {
 								console.log("All inner segments combinations len: " + p.allInnerSegmentsCombinations.length);
 								//console.log("All Inner Segments Combinations");
 								//console.log(p.allInnerSegmentsCombinations);
+								let dcel = new DCELGraph();
+								dcel.initFromConvexHullPoints(p.convexHullPoints);
+								p.dcelSegments = dcel.getEdgesSegments();
+
 							}
 						}
 					}
@@ -173,9 +182,9 @@ var makeCanvas = function(p) {
 	};
 
 	/** Display a list of segments */
-	p.showSegments = function(segments){
+	p.showSegments = function(segments, color="black"){
 		p.push();
-		p.stroke("red");
+		p.stroke(color);
 		p.strokeWeight(2);
 		for (let i = 0; i < segments.length; i++){
 			let seg = segments[i];
@@ -300,6 +309,7 @@ let l2 = ["a", "b", "c", "d"];
 let combis = combi.getCombinationsOfSizeKFromList(2,l1);
 console.log(combis);
 */
+
 
 function validatePointSet()
 {

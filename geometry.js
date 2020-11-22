@@ -121,7 +121,77 @@ class DCELGraph {
         this.prevClickedVertexIdx = null;
         this.clickedVertexIdx = null;
         this.currentVertexIdx = null;
-        this.makeInitialSquare();
+        //this.makeInitialSquare();
+    }
+
+    getEdgesSegments(){
+        let edgesSegs = [];
+        console.log(this.counterClockWiseEdges);
+        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
+            let edge = this.counterClockWiseEdges[i];
+            let seg = new Segment(edge.origin.pt, edge.next.origin.pt);
+            edgesSegs.push(seg);
+        }
+        return edgesSegs;
+    }
+
+    addEdgeFromSegment(segment){
+        
+    }
+
+
+    initFromConvexHullPoints(convexHullPoints){
+        let exteriorFace = new DCELFace();
+        let interiorFace = new DCELFace();
+
+        this.faces.push(interiorFace);
+        this.faces.push(exteriorFace);
+
+        const nbPoints = convexHullPoints.length;
+
+        /* Create DCEL vertices from point instances. */
+        for (let i = 0; i < nbPoints; ++i) 
+        {
+            let vertex = new DCELVertex(convexHullPoints[i]);
+            this.vertices.push(vertex);
+        }
+
+        /* Creates exterior edges and their twins, creating the square shape.
+        Also sets the face of each edge. */
+        for (let i = 0; i < nbPoints; ++i) 
+        {
+            let pStart = this.vertices[i];
+            let pStartReverse = this.vertices[(i + 1) % nbPoints];
+            let newEdge = new DCELEdge();
+            let newEdgeReverse = new DCELEdge();
+            newEdge.origin = pStart;
+            newEdgeReverse.origin = pStartReverse;
+            pStart.outEdge = newEdge;
+            pStartReverse.outEdge = newEdgeReverse;
+            newEdge.twin = newEdgeReverse;
+            newEdgeReverse.twin = newEdge;
+            newEdge.face = interiorFace;
+            newEdgeReverse.face = exteriorFace;
+            this.counterClockWiseEdges.push(newEdge);
+            this.clockWiseEdges.push(newEdgeReverse);
+        }
+
+        interiorFace.startEdge = this.counterClockWiseEdges[0];
+        exteriorFace.startEdge = this.clockWiseEdges[0];
+
+        /* Set the previous and next attributes of the edges. */
+        for (let i = 0; i < nbPoints; ++i) 
+        {
+            let prevIndex = mod((i - 1), nbPoints);
+            let nextIndex = mod((i + 1), nbPoints);
+
+            this.counterClockWiseEdges[i].prev = this.counterClockWiseEdges[
+            prevIndex];
+            this.counterClockWiseEdges[i].next = this.counterClockWiseEdges[
+            nextIndex];
+            this.clockWiseEdges[i].prev = this.clockWiseEdges[prevIndex];
+            this.clockWiseEdges[i].next = this.clockWiseEdges[nextIndex];
+        }   
     }
 
     makeInitialSquare() 
