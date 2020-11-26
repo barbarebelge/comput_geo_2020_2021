@@ -115,9 +115,13 @@ var makeCanvas = function(p) {
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[p.convexHullPoints.length-1], p.convexHullPoints[0]));
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[2]));
 								*/
+								console.log("Triangulation Faces: " + getPointSetTriangulationFacesNb(p.points.length, p.convexHullPoints.length));
+								console.log("Triangulation Edges: " + getPointSetTriangulationEdgesNb(p.points.length, p.convexHullPoints.length));
+								let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(p.points.length, p.convexHullPoints.length);
+								console.log("Triangulation Inner Edges: " + triangInnerEdgesNb);
 								p.allInnerSegments = getAllInnerSegmentsOfPointSet(p.points, p.convexHullPoints);
 								console.log("All inner segments len: " + p.allInnerSegments.length);
-								p.allInnerSegmentsCombinations = getAllCombinationsOf(p.allInnerSegments);
+								p.allInnerSegmentsCombinations = getCombinationsOfSizeK(p.allInnerSegments, triangInnerEdgesNb)
 								console.log("All inner segments combinations len: " + p.allInnerSegmentsCombinations.length);
 								//console.log("All Inner Segments Combinations");
 								//console.log(p.allInnerSegmentsCombinations);

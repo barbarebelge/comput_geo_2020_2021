@@ -593,7 +593,28 @@ function getGrahamScanTriangulation(points, leftMostPointIdx)
     return convexHullPoints;
 }
 
+/**
+* @return [int] number of triangles/faces of a point set triangulation
+*/
+function getPointSetTriangulationFacesNb(pointSetSize, convexHullPointsNb){
+    return 2 * pointSetSize - convexHullPointsNb - 2;
+}
 
+/**
+* @return [int] number of edges of a point set triangulation
+*/
+function getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsNb){
+    return 3 * pointSetSize - convexHullPointsNb - 3;
+}
+/**
+* @return [int] number of inner edges of a point set triangulation
+* which is the total number of edges of the triangulation without 
+* the edges of the Convex Hull.
+*/
+function getPointSetTriangulationInnerEdgesNb(pointSetSize, convexHullPointsNb){
+    let edgesNb = getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsNb)
+    return edgesNb - convexHullPointsNb // convexHullPoints = number of edges of the Convex Hull
+}
 
 /**
 * Check if two segments have the same endpoints, 
@@ -715,6 +736,14 @@ function getAllCombinationsOf(list){
     return combinations;
 }
 
+/**
+* @param [list] list
+* @return [list of lists] a list with all combinations of size k from list
+*/
+function getCombinationsOfSizeK(list, k){
+    let combinator = new Combinator();
+    return combinator.getCombinationsOfSizeKFromList(k, list);
+}
 
 
 /** 
