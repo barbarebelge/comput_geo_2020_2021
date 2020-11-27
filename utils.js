@@ -11,3 +11,8 @@ function typeOf(obj) {
 function mod(a, n){
 	return ((a % n ) + n ) % n;
 }
+
+function removeElem(elem, list) {
+  let index = list.indexOf(elem);
+  list.splice(index, 1); // remove elem
+}

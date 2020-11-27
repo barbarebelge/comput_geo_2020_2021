@@ -17,7 +17,9 @@ var makeCanvas = function(p) {
 	p.lastClickedPointIdx = null;
 	p.allInnerSegments = [];
 	p.allInnerSegmentsCombinations = [];
+	p.combinationIdx = null;
 	p.dcelSegments = [];
+	p.vtxPt = null;
 
 
 	p.reset = function ()
@@ -30,7 +32,9 @@ var makeCanvas = function(p) {
 		p.lastClickedPointIdx = null;
 		p.allInnerSegments = [];
 		p.allInnerSegmentsCombinations = [];
+		p.combinationIdx = null;
 		p.dcelSegments = [];
+		p.vtxPt = null;
 		p.redraw();
 	};
 
@@ -54,11 +58,14 @@ var makeCanvas = function(p) {
 		    p.showConvexHull();
 		    //p.showSegments(p.allInnerSegments); // TMP display
 		    if(p.allInnerSegmentsCombinations.length != 0){ // TMP display
-		    	p.showSegments(p.allInnerSegmentsCombinations[p.allInnerSegmentsCombinations.length-1], "red");
+		    	p.showSegments(p.allInnerSegmentsCombinations[p.combinationIdx], "red");
 		    	// the last combination is using all the inner segments
 			}
 			if(p.dcelSegments.length != 0){
 				p.showSegments(p.dcelSegments, "blue");
+			}
+			if(p.vtxPt !== null){
+				p.showPoint(p.vtxPt, "green");
 			}
 		}
 	};
@@ -127,8 +134,18 @@ var makeCanvas = function(p) {
 								//console.log(p.allInnerSegmentsCombinations);
 								let dcel = new DCELGraph();
 								dcel.initFromConvexHullPoints(p.convexHullPoints);
+								p.combinationIdx = 0;
+								let combi = p.allInnerSegmentsCombinations[p.combinationIdx];
+								let seg = combi[0];
+								let vtxIdx = dcel.getCommonVertexIdxOfSegment(seg);
+								p.vtxPt = dcel.getVertexOfIdx(vtxIdx).pt;
+								//dcel.addEdgeFromSegment(seg, vtxIdx);
+								dcel.addSegments(combi);
+								console.log("Vtx Idx: "+ vtxIdx);
 								p.dcelSegments = dcel.getEdgesSegments();
-
+								console.log("Faces size: "+dcel.getFacesSize());
+								//p.dcelSegments = dcel.getIncidentOutEdgesOfVertexIdx(3);
+								//p.dcelSegments = dcel.getFaceSegsFromIdx(0);
 							}
 						}
 					}
@@ -150,6 +167,14 @@ var makeCanvas = function(p) {
 		p.noStroke();
 	};
 
+	p.showPoint = function (point, col="black"){
+		p.push();
+		let radius = POINT_RADIUS * 2;
+		p.stroke(col);
+		p.fill(p.color(col)); 
+		p.ellipse(point.x, point.y, radius);
+		p.pop();
+	}
 
 	/** Draws the ellipses for the points and marks the last clicked one. */
 	p.showPoints = function () {

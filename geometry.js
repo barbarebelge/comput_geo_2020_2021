@@ -109,19 +109,66 @@ class DCELEdge {
         this.face = null;
         // this.pEnd = pEnd;
     }
+    getTarget(){
+        return this.next.origin;
+    }
 }
 
 class DCELGraph {
     constructor()
     {
         this.vertices = [];
-        this.clockWiseEdges = [];
-        this.counterClockWiseEdges = [];
+        this.clockWiseEdges = []; // edges of the exterior face
+        this.counterClockWiseEdges = []; // edges of the interior faces
         this.faces = [];
-        this.prevClickedVertexIdx = null;
-        this.clickedVertexIdx = null;
-        this.currentVertexIdx = null;
-        //this.makeInitialSquare();
+        this.exteriorFace = null;
+    }
+
+    getFaceOfNewVertex(vertex, newVertex){
+        let incidentEdges = this.getIncidentOutEdgesOfVertex(vertex);
+        console.log(incidentEdges);
+        let face = null;
+        for(let i = 0; i < incidentEdges.length; i++){
+            face = incidentEdges[i].face;
+            let curEdge = face.startEdge;
+            let start = curEdge;
+            let pointInside = true;
+            while(curEdge.next !== start){
+                if(isRightTurn(curEdge.origin.pt, curEdge.getTarget().pt, vertex.pt)){
+                    pointInside = false;
+                    break;
+                }
+                curEdge = curEdge.next;
+            }
+            if(isRightTurn(curEdge.origin.pt, curEdge.getTarget().pt, vertex.pt)){
+                pointInside = false;
+            }
+            if(pointInside){
+                break;
+            }
+        }
+        return face;
+    }
+
+    getFacesSize(){
+        let facesSize = [];
+        for(let i = 0; i < this.faces.length; i++){
+            facesSize.push(this.getFaceSegsFromIdx(i).length);
+        }
+        return facesSize;
+    }
+
+    getFaceSegsFromIdx(faceIdx){
+        let face = this.faces[faceIdx];
+        let start = face.startEdge;
+        let curEdge = start;
+        let faceSegs = [];
+        while(curEdge.next !== start){ // stops at the edge before start
+            faceSegs.push(this.getEdgeSegment(curEdge));
+            curEdge = curEdge.next;
+        }
+        faceSegs.push(this.getEdgeSegment(curEdge));
+        return faceSegs;
     }
 
     getEdgesSegments(){
@@ -135,8 +182,150 @@ class DCELGraph {
         return edgesSegs;
     }
 
-    addEdgeFromSegment(segment){
-        
+    // Used to test 
+    getIncidentOutEdgesOfVertexIdx(vIdx){
+        let vertex = this.vertices[vIdx];
+        console.log("CCE: "+this.counterClockWiseEdges.length);
+        console.log("CE: "+this.clockWiseEdges.length);
+        console.log("V: "+this.vertices.length);
+        let incidentEdges = [];
+        // this method is not working 
+        /*
+        let curEdge = vertex.outEdge;
+        let startEdge = curEdge;
+        while(curEdge.twin.next !== startEdge){
+            incidentEdges.push(this.getEdgeSegment(curEdge));
+            curEdge = curEdge.twin.next;
+        }
+        */
+        // this method is working
+        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
+            if(this.counterClockWiseEdges[i].origin === vertex){
+                incidentEdges.push(this.getEdgeSegment(this.counterClockWiseEdges[i]));
+            }
+        }
+        for (let i = 0; i < this.clockWiseEdges.length; i++){
+            if(this.counterClockWiseEdges[i].origin === vertex){
+                incidentEdges.push(this.getEdgeSegment(this.clockWiseEdges[i]));
+            }
+        }
+        console.log("Incident Outedges:");
+        console.log(incidentEdges);
+        return incidentEdges;
+    }
+
+    getEdgeSegment(edge){
+        let seg = new Segment(edge.origin.pt, edge.next.origin.pt);
+        return seg;
+    }
+
+    getIncidentOutEdgesOfVertex(vertex){
+        let incidentEdges = [];
+        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
+            if(this.counterClockWiseEdges[i].origin === vertex){
+                incidentEdges.push(this.counterClockWiseEdges[i]);
+            }
+        }
+        // We don't need the clockWiseEdges
+        /*
+        for (let i = 0; i < this.clockWiseEdges.length; i++){
+            if(this.counterClockWiseEdges[i].origin === vertex){
+                incidentEdges.push(this.clockWiseEdges[i]);
+            }
+        }
+        */
+        return incidentEdges;
+    }
+
+    getVerticesCommonFace(vertex1, vertex2){
+        let incidentEdgesV1 = this.getIncidentOutEdgesOfVertex(vertex1);
+        let incidentEdgesV2 = this.getIncidentOutEdgesOfVertex(vertex2);
+        let commonFace = null;
+        let i1 = 0;
+        let i2 = 0;
+        while(i1 < incidentEdgesV1.length && !commonFace){
+            while(i2 < incidentEdgesV2.length && !commonFace){
+                if (incidentEdgesV1[i1].face === incidentEdgesV2[i2].face && incidentEdgesV2[i2].face !== this.exteriorFace){
+                    commonFace = incidentEdgesV1[i1].face;
+                }
+                i2 += 1;
+            }
+            i1+=1;
+        }
+        return commonFace;
+    }
+
+    getVertexIncidentEdgeToFace(vertex, face){
+        let incidentEdges = this.getIncidentOutEdgesOfVertex(vertex);
+        let edge = null;
+        for(let i=0; i < incidentEdges.length; i++){
+            if(incidentEdges[i].face === face){
+                edge = incidentEdges[i];
+                break;
+            }
+        }
+        return edge; 
+    }
+
+    getVertexOfIdx(idx){
+        return this.vertices[idx];
+    }
+
+    getCommonVertexIdxOfSegment(segment){
+        let p1 = segment.p1;
+        let p2 = segment.p2;
+        for (let i = 0; i < this.vertices.length; ++i) 
+        {
+            let p = this.vertices[i].pt;
+            if (p1 === p || p2 === p){
+                return i;
+            }
+        }
+        return null;   
+    }
+
+    getVertexIdxOfPoint(point){
+        for (let i = 0; i < this.vertices.length; ++i) 
+        {
+            let p = this.vertices[i].pt;
+            if (p === point){
+                return i;
+            }
+        }
+        return null;   
+    }
+
+    addEdgeFromSegment(segment, vtxIdx){
+        if(vtxIdx == null){
+            console.log("The vertex idx is null.");
+        }
+        let p1 = segment.p1;
+        let p2 = segment.p2;
+        let v1 = this.vertices[vtxIdx];
+        if (v1.pt === p1){ // p1 exsits already
+            let v2Idx = this.getVertexIdxOfPoint(p2);
+            if(v2Idx){
+                // connect two existing vertices
+                this.connectVertices(v1, this.vertices[v2Idx]);
+            }
+            else{ // p2 new vertex
+                // connect existing vertex to a new one
+                let v2 = new DCELVertex(p2);
+                this.connectVertexToNewVertex(v1, v2);
+            }
+        }
+        else if(v1.pt === p2){ // p2 exists already
+            let v2Idx = this.getVertexIdxOfPoint(p1);
+            if(v2Idx){
+                // connect two existing vertices
+                this.connectVertices(v1, this.vertices[v2Idx]);
+            }
+            else{ // p1 new vertex
+                // connect existing vertex to a new one
+                let v2 = new DCELVertex(p1);
+                this.connectVertexToNewVertex(v1, v2);
+            }
+        }
     }
 
 
@@ -145,7 +334,8 @@ class DCELGraph {
         let interiorFace = new DCELFace();
 
         this.faces.push(interiorFace);
-        this.faces.push(exteriorFace);
+        //this.faces.push(exteriorFace);
+        this.exteriorFace = exteriorFace;
 
         const nbPoints = convexHullPoints.length;
 
@@ -185,116 +375,107 @@ class DCELGraph {
             let prevIndex = mod((i - 1), nbPoints);
             let nextIndex = mod((i + 1), nbPoints);
 
-            this.counterClockWiseEdges[i].prev = this.counterClockWiseEdges[
-            prevIndex];
-            this.counterClockWiseEdges[i].next = this.counterClockWiseEdges[
-            nextIndex];
+            this.counterClockWiseEdges[i].prev = this.counterClockWiseEdges[prevIndex];
+            this.counterClockWiseEdges[i].next = this.counterClockWiseEdges[nextIndex];
             this.clockWiseEdges[i].prev = this.clockWiseEdges[prevIndex];
             this.clockWiseEdges[i].next = this.clockWiseEdges[nextIndex];
         }   
     }
 
-    makeInitialSquare() 
-    {
-        addPoint(350, 550);
-        addPoint(700, 550);
-        addPoint(700, 200);
-        addPoint(350, 200);
-
-        let exteriorFace = new DCELFace();
-        let interiorFace = new DCELFace();
-
-        this.faces.push(interiorFace);
-        this.faces.push(exteriorFace);
-
-        const nbPoints = points.length;
-
-        /* Create DCEL vertices from point instances. */
-        for (let i = 0; i < nbPoints; ++i) 
-        {
-            let vertex = new DCELVertex(points[i]);
-            this.vertices.push(vertex);
-        }
-
-        /* Creates exterior edges and their twins, creating the square shape.
-        Also sets the face of each edge. */
-        for (let i = 0; i < nbPoints; ++i) 
-        {
-            let pStart = this.vertices[i];
-            let pStartReverse = this.vertices[(i + 1) % nbPoints];
-            let newEdge = new DCELEdge();
-            let newEdgeReverse = new DCELEdge();
-            newEdge.origin = pStart;
-            newEdgeReverse.origin = pStartReverse;
-            pStart.outEdge = newEdge;
-            pStartReverse.outEdge = newEdgeReverse;
-            newEdge.twin = newEdgeReverse;
-            newEdgeReverse.twin = newEdge;
-            newEdge.face = interiorFace;
-            newEdgeReverse.face = exteriorFace;
-            this.counterClockWiseEdges.push(newEdge);
-            this.clockWiseEdges.push(newEdgeReverse);
-        }
-
-        interiorFace.startEdge = this.counterClockWiseEdges[0];
-        exteriorFace.startEdge = this.clockWiseEdges[0];
-
-        /* Set the previous and next attributes of the edges. */
-        for (let i = 0; i < nbPoints; ++i) 
-        {
-            let prevIndex = mod(i - 1, nbPoints);
-            let nextIndex = mod(i + 1, nbPoints);
-
-            this.counterClockWiseEdges[i].prev = this.counterClockWiseEdges[
-            prevIndex];
-            this.counterClockWiseEdges[i].next = this.counterClockWiseEdges[
-            nextIndex];
-            this.clockWiseEdges[i].prev = this.clockWiseEdges[prevIndex];
-            this.clockWiseEdges[i].next = this.clockWiseEdges[nextIndex];
-        }
-    }
-
-    checkClickedVertexIdx(x, y) 
-    {
-        for (let i = 0; i < this.vertices.length; ++i) 
-        {
-            let pt = this.vertices[i].pt;
-            // if the click occured inside the radius of the point
-            // then the point was clicked
-            
-            if (dist(x, y, pt.x, pt.y) < POINT_RADIUS) 
-            {
-            // this.prevClickedVertexIdx = this.clickedVertexIdx;
-            // this.clickedVertexIdx = i;
-            return i;
-            }
-        }
-
-        // this.prevClickedVertexIdx = this.clickedVertexIdx;
-        // this.clickedVertexIdx = null;
-        return null;
-    }
-
     /** 
      * Add a new vertex and connect it to another existing vertex.
      */
-    connectVertex(vertex, newVertex, face) 
-    {
-        this.vertices.push(newVertex);
-        this.connectVertices(vertex, newVertex, face);
+    connectVertexToNewVertex(vertex, newVertex){
+        //if(this.connectVerticesIfNotIntersect(vertex1, vertex2)){
+            console.log("Connect existing vertex to new vertex");
+            let face = this.getFaceOfNewVertex(vertex, newVertex);
+            let v1outEdge = this.getVertexIncidentEdgeToFace(vertex, face)
+            let v1inEdge = v1outEdge.prev;
+            let hedge = new DCELEdge(newVertex);
+            let hedgeTwin = new DCELEdge(vertex);
+            hedge.twin = hedgeTwin;
+            hedgeTwin.twin = hedge;
+            hedge.face = face;
+            hedgeTwin.face = face;
+            
+            hedge.next = hedgeTwin;
+            hedgeTwin.next = v1outEdge;
+            hedge.prev = v1inEdge;
+            hedgeTwin.prev = hedge;
+            v1inEdge.next = hedge;
+            v1outEdge.prev = hedgeTwin
+            console.log("Done connecting existing vertex to new vertex");
+            return true;
+        /*
+        }
+        else{
+            console.log("There is an intersection");
+            return false;
+        }
+        */
     }
+    // To Do
+    // We need to connect first the segments having an existing vertex.
+    // Remove from the list the segment succesfully added at each step.  
+    // If intersection return false
+    // All segments added return true (eventually check if faces are all triangular).
+    addSegments(segments){
+        for(let i = 0; i < segments.length; i++){
+            let vtxIdx = this.getCommonVertexIdxOfSegment(segments[i]);
+            if (vtxIdx){
+                this.addEdgeFromSegment(segments[i], vtxIdx);
+            }
+        }
+    }
+    
+
+    /*
+    addSegments(segments){
+        let intersection = false;
+        //console.log("Len segments: "+segments.length);
+        //while(!intersection && !(segments.length === 0)){
+            //console.log("Len segments: "+segments.length);
+            let i = 0;
+            while (segments.length !== 0 || !intersection){
+            //for(let i = 0; i < segments.length; i++){
+                let vtxIdx = this.getCommonVertexIdxOfSegment(segments[i]);
+                if (vtxIdx){
+                    let added = this.addEdgeFromSegment(segments[i], vtxIdx);
+                    if (!added){
+                        intersection = true;
+                        break;
+                    }
+                    else{
+                        removeElem(segments[i], segments);
+                        console.log("Len segments: "+segments.length);
+                    }
+                }
+                i = (i+1) % segments.length;
+            }
+        //}
+        return !intersection;
+    }
+    */
 
     /**
      * Connect two existing vertices if the edge to create does not intersect 
      * any other existing edge.
      */
-    connectVerticesIfNotIntersect(vertex, newVertex, face)
+    connectVerticesIfNotIntersect(vertex, newVertex)
     {
         let res = false;
-
-        if (vertex.outEdge.next.origin.pt === newVertex.pt)
+        let edgeExists = false;
+        let edges = this.getIncidentOutEdgesOfVertex(vertex);
+        for (let i = 0; i < edges.length; i++){
+            if(edges[i].origin.pt === newVertex.pt){
+                edgeExists = true;
+            }
+        }
+        //if (vertex.outEdge.next.origin.pt === newVertex.pt)
+        if(edgeExists)
         {
-            showNotification("Vertices are already connected", FAILURE_RED);
+            //showNotification("Vertices are already connected", FAILURE_RED);
+            console.log("Vertices are already connected");
         }
 
         else
@@ -313,14 +494,14 @@ class DCELGraph {
                 if (intersectEdge) 
                 {
                     // console.log("conflicting segment:", i, "->", i + 1);
-                    showNotification("Cannot add a point leading to intersecting edges", FAILURE_RED);
+                    console.log("Cannot add a point leading to intersecting edges");
+                    //showNotification("Cannot add a point leading to intersecting edges", FAILURE_RED);
                     break;
                 }
             }
 
             if (!intersectEdge) 
             {
-                this.connectVertices(vertex, newVertex, face);
                 res = true;
             }
         }
@@ -329,120 +510,78 @@ class DCELGraph {
 
     }
 
-
     /**
      * Connect two existing vertices of the DCEL.
+     * This will split a face in two faces.
      */
-    connectVertices(vertex, newVertex, face) 
+    connectVertices(vertex1, vertex2) 
     {
-        let edge = new DCELEdge(vertex);
-        let edgeTwin = new DCELEdge(newVertex);
-        edge.twin = edgeTwin;
-        edgeTwin.twin = edge;
+        //if(this.connectVerticesIfNotIntersect(vertex1, vertex2)){
+            console.log("Adding edge between two existing vertices.")
+            // find the edges incident to their common face, because a vertex
+            // can be incident to several faces and also can have several outEdges
+            // the face can't be the exterior face
+            let commonFace = this.getVerticesCommonFace(vertex1, vertex2);
+            // edges originating from them and in clockwise sense
+            let v1outEdge = this.getVertexIncidentEdgeToFace(vertex1, commonFace);
+            let v2outEdge = this.getVertexIncidentEdgeToFace(vertex2, commonFace);
 
-        edge.face = face;
-        edgeTwin.face = face;
+            let face1 = new DCELFace();
+            let face2 = new DCELFace();
+            
+            let edge = new DCELEdge(vertex1);
+            let edgeTwin = new DCELEdge(vertex2);
+            
+            edge.twin = edgeTwin;
+            edgeTwin.twin = edge;
+           
+            // et <-> v1out
+            edgeTwin.next = v1outEdge;
+            v1outEdge.prev = edgeTwin;
 
-        edge.next = edgeTwin;
-
-        if (vertex.outEdge) 
-        {
-            edge.prev = vertex.outEdge.prev;
-            edgeTwin.next = vertex.outEdge.twin;
-        }
-        edgeTwin.prev = edge;
-
-        // update out egdes at the end, so we could use the old values
-        // to update everything
-        vertex.outEdge = edge;
-        newVertex.outEdge = edgeTwin;
-
-        this.counterClockWiseEdges.push(edge);
-        this.clockWiseEdges.push(edgeTwin);
-    }
-
-
-  /** 
-   * Returns a point if it was clicked on, a
-   * and null if none was clicked.
-   */
-    checkClickedSegmentPoint(x, y) 
-    {
-        let res = null;
-        const nbEdges = this.clockWiseEdges.length;
-        console.log("check if clicked on segment ...");
-        console.log("nb points:", nbEdges);
-        let segmentPoint = null;
-
-        for (let i = 0; i < nbEdges; ++i) 
-        {
-            let edge = this.counterClockWiseEdges[i];
-            let vertex = edge.origin;
-            let nextVertex = edge.next.origin;
-            let segment = new Segment(vertex.pt, nextVertex.pt);
-            segmentPoint = coordOnSegment(x, y, segment);
-
-            if (segmentPoint) 
-            {
-                res = [i, vertex, nextVertex, segmentPoint];
+            let curEdge = edgeTwin;
+            while(curEdge.getTarget() !== vertex2){
+                curEdge.face = face1;
+                curEdge = curEdge.next;
             }
-        }
+            curEdge.face = face1; // the edge before vertex2, v2in
+            // et <-> v2in
+            edgeTwin.prev = curEdge;
+            curEdge.next = edgeTwin;
+            // e <-> v2out
+            edge.next = v2outEdge;
+            v2outEdge.prev = edge;
 
-        return res;
-    }
+            curEdge = edge;
+            while(curEdge.getTarget() !== vertex1){
+                curEdge.face = face2;
+                curEdge = curEdge.next;
+            }
+            curEdge.face = face2; // the edge before vertex1, v1in
+            // e <-> v1in
+            curEdge.next = edge;
+            edge.prev = curEdge;
 
-    splitSegmentIfCLicked(x, y) 
-    {
-        let tuple = this.checkClickedSegmentPoint(x, y);
-        if (tuple) 
-        {
-            this.splitEdge(tuple[0], tuple[1], tuple[2], tuple[3]);
+            face1.startEdge = edge;
+            face2.startEdge = edgeTwin;
+
+            vertex1.outEdge = edge;
+            vertex2.outEdge = edgeTwin; 
+
+            removeElem(commonFace, this.faces);
+            this.faces.push(face1);
+            this.faces.push(face2);
+            this.counterClockWiseEdges.push(edge);
+            this.counterClockWiseEdges.push(edgeTwin);
+            console.log("Finished adding edge between two existing vertices.")
             return true;
+        /*
         }
-        return false;
-    }
-
-    splitEdge(edgeIdx, vertex, nextVertex, splitPoint) 
-    {
-        console.log("split edge ...");
-        let newVertex = new DCELVertex(splitPoint);
-        let inEdge = new DCELEdge(vertex);
-        let inEdgeTwin = new DCELEdge(newVertex);
-        let outEdge = new DCELEdge(newVertex);
-        let outEdgeTwin = new DCELEdge(nextVertex); // vertex.outEdge.next.origin
-
-        inEdge.twin = inEdgeTwin;
-        inEdgeTwin.twin = inEdge;
-        inEdge.face = vertex.outEdge.face;
-        inEdgeTwin.face = vertex.outEdge.twin.face;
-        inEdge.prev = vertex.outEdge.prev;
-        inEdgeTwin.prev = outEdgeTwin;
-        inEdge.next = outEdge;
-        inEdgeTwin.next = vertex.outEdge.twin.next;
-        
-        outEdge.twin = outEdgeTwin;
-        outEdgeTwin.twin = outEdge;
-        outEdge.face = nextVertex.outEdge.prev.face;
-        outEdgeTwin.face = nextVertex.outEdge.prev.twin.face;
-        outEdge.prev = inEdge;
-        outEdgeTwin.prev = nextVertex.outEdge.twin;
-        outEdge.next = nextVertex.outEdge;
-        outEdgeTwin.next = inEdgeTwin;
-
-        vertex.outEdge = inEdge;
-        console.log("remove edge id: ", edgeIdx);
-        this.counterClockWiseEdges.splice(edgeIdx, 1);
-        this.clockWiseEdges.splice(edgeIdx, 1);
-
-        newVertex.outEdge = outEdge;
-        nextVertex.outEdge.prev = outEdge;
-
-        points.push(splitPoint);
-        this.vertices.push(newVertex);
-        this.counterClockWiseEdges.push(inEdge);
-        this.counterClockWiseEdges.push(outEdge);
-        this.clockWiseEdges.push(inEdgeTwin);
-        this.clockWiseEdges.push(outEdgeTwin);
+        else{
+            console.log("There is an intersection");
+            return false;
+        }
+        */
     }
 }
 
@@ -876,8 +1015,8 @@ function orientationsDifferent(seg1, seg2, allowAligned = true)
 {
     seg1Orient1 = getOrientation(seg1.p1, seg1.p2, seg2.p1);
     seg1Orient2 = getOrientation(seg1.p1, seg1.p2, seg2.p2);
-    console.log(seg1Orient1);
-    console.log(seg1Orient2);
+    //console.log(seg1Orient1);
+    //console.log(seg1Orient2);
     seg1AlignmentDetected = (seg1Orient1 === ORIENT.ALIGNED || seg1Orient2 === ORIENT.ALIGNED);
     
     if (seg1AlignmentDetected && ! allowAligned)
