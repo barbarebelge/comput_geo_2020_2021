@@ -20,6 +20,7 @@ var makeCanvas = function(p) {
 	p.combinationIdx = null;
 	p.dcelSegments = [];
 	p.vtxPt = null;
+	p.triangulations = [];
 
 
 	p.reset = function ()
@@ -35,6 +36,7 @@ var makeCanvas = function(p) {
 		p.combinationIdx = null;
 		p.dcelSegments = [];
 		p.vtxPt = null;
+		p.triangulations = [];
 		p.redraw();
 	};
 
@@ -61,11 +63,14 @@ var makeCanvas = function(p) {
 		    	p.showSegments(p.allInnerSegmentsCombinations[p.combinationIdx], "red");
 		    	// the last combination is using all the inner segments
 			}
-			if(p.dcelSegments.length != 0){
+			if(p.dcelSegments.length !== 0){
 				p.showSegments(p.dcelSegments, "blue");
 			}
 			if(p.vtxPt !== null){
 				p.showPoint(p.vtxPt, "green");
+			}
+			if(p.triangulations.length !== 0){
+				p.showTriangulation(p.triangulations[0], "orange");
 			}
 		}
 	};
@@ -114,6 +119,10 @@ var makeCanvas = function(p) {
 							{
 								showNotification("Point limit reached", NOTIF_BLUE);
 								validatePointSet();
+
+								// Triangulation with lists
+								p.triangulations = getAllTriangulations(p.points, p.convexHullPoints);
+
 								/* // TO REMOVE: used to verify polygon class and areSegmentPoints()
 								let polygon = new Polygon(p.convexHullPoints);
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[1]));
@@ -122,6 +131,9 @@ var makeCanvas = function(p) {
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[p.convexHullPoints.length-1], p.convexHullPoints[0]));
 								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[2]));
 								*/
+
+								// Triangulation with DCEL 
+								/* 
 								console.log("Triangulation Faces: " + getPointSetTriangulationFacesNb(p.points.length, p.convexHullPoints.length));
 								console.log("Triangulation Edges: " + getPointSetTriangulationEdgesNb(p.points.length, p.convexHullPoints.length));
 								let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(p.points.length, p.convexHullPoints.length);
@@ -134,18 +146,34 @@ var makeCanvas = function(p) {
 								//console.log(p.allInnerSegmentsCombinations);
 								let dcel = new DCELGraph();
 								dcel.initFromConvexHullPoints(p.convexHullPoints);
+								p.allInnerSegmentsCombinations = getSegsCombiWithNoIntersect(p.allInnerSegmentsCombinations);
+								console.log("Combis with no intersection: " + p.allInnerSegmentsCombinations.length);
 								p.combinationIdx = 0;
 								let combi = p.allInnerSegmentsCombinations[p.combinationIdx];
+								console.log(combi);
+								console.log("Segments List Intersect: " + areSegmentsListIntersect(combi));
 								let seg = combi[0];
+								//let seg = new Segment(dcel.vertices[0].pt, dcel.vertices[2].pt);
 								let vtxIdx = dcel.getCommonVertexIdxOfSegment(seg);
 								p.vtxPt = dcel.getVertexOfIdx(vtxIdx).pt;
 								//dcel.addEdgeFromSegment(seg, vtxIdx);
-								dcel.addSegments(combi);
+								//p.dcelSegments = getEdgesToSegments(dcel.getAllIncidentOutEdgesOfVertex(dcel.vertices[0]));
+								//p.dcelSegments = dcel.getFaceSegsFromIdx(0);
+								//p.dcelSegments = dcel.getFaceSegsFromIdx(1);
+								//dcel.addSegments(combi);
 								console.log("Vtx Idx: "+ vtxIdx);
 								p.dcelSegments = dcel.getEdgesSegments();
+
+								//console.log("Vertex Inside: ", dcel.isVertexInside(dcel.vertices[0]));
+								//console.log("Vertices Connected: " + dcel.areVerticesConnected(dcel.vertices[1],dcel.vertices[0]));
+								//console.log("Dcel connect: "+dcel.connectVerticesIfNotIntersect(dcel.vertices[0],dcel.vertices[1]));
+								//console.log("Dcel connect: "+dcel.connectVerticesIfNotIntersect(dcel.vertices[0],dcel.vertices[2]));
+								//console.log("Dcel connect: "+dcel.connectVerticesIfNotIntersect(dcel.vertices[1],dcel.vertices[3]));
+								
 								console.log("Faces size: "+dcel.getFacesSize());
 								//p.dcelSegments = dcel.getIncidentOutEdgesOfVertexIdx(3);
 								//p.dcelSegments = dcel.getFaceSegsFromIdx(0);
+								*/
 							}
 						}
 					}
@@ -220,6 +248,13 @@ var makeCanvas = function(p) {
 			p.line(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
 		}
 		p.pop();
+	}
+
+	p.showTriangulation = function (triangulation, color="black"){
+		for(let i = 0; i < triangulation.length; i++){
+			p.showSegments(triangulation[i], color);
+		}
+		
 	}
 
 	/** Draws a simple line between two points. */
@@ -339,6 +374,25 @@ let combis = combi.getCombinationsOfSizeKFromList(2,l1);
 console.log(combis);
 */
 
+//  TO REMOVE used to test segmentsIntersect();
+/*
+let seg0 = new Segment(new Point(0,100), new Point(0, 0));
+let seg1 = new Segment(new Point(0, 0), new Point(0,100));
+let seg2 = new Segment(new Point(0, 0), new Point(0,100));
+let seg3 = new Segment(new Point(0,0), new Point(100,100));
+let seg4 = new Segment(new Point(0,100), new Point(100,0));
+console.log("Segs are on same line: " + segmentsIntersect(seg0, seg1, true));
+console.log("Segs are on same line: " + segmentsIntersect(seg1, seg2, true));
+console.log("Segs have a common endpoint: " + segmentsIntersect(seg1, seg3, true));
+console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg3, seg4, true));
+console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg4, seg3, true));
+console.log("-------");
+console.log("Segs are on same line: " + segmentsIntersect(seg0, seg1, false));
+console.log("Segs are on same line: " + segmentsIntersect(seg1, seg2, false));
+console.log("Segs have a common endpoint: " + segmentsIntersect(seg1, seg3, false));
+console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg3, seg4, false));
+console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg4, seg3, false));
+*/
 
 function validatePointSet()
 {
