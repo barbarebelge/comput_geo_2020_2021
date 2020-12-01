@@ -401,19 +401,28 @@ function validatePointSet()
 		
 	if (currentCanvas === CANVAS_TYPE.LEFT)
 	{
-		convexHullSize = leftCanvas.computeConvexHull();
-
-		// if the number of points was sufficient to compute a convex hull
-		if (convexHullSize)
+		if (pointSetInGeneralPosition(leftCanvas.points))
 		{
-			console.log("convex hull size:", convexHullSize);
-			leftCanvas.setPointPlacement(false);
-			rightCanvas.setPointPlacement(true);
-			rightCanvas.pointsLimit = leftCanvas.points.length;
-			console.log("right canvas max points:",rightCanvas.pointsLimit);
-			currentCanvas = CANVAS_TYPE.RIGHT;
-			notifText = "Validated left canvas, now unlocking right canvas";
-			leftCanvas.redraw();
+			convexHullSize = leftCanvas.computeConvexHull();
+
+			// if the number of points was sufficient to compute a convex hull
+			if (convexHullSize)
+			{
+				console.log("convex hull size:", convexHullSize);
+				leftCanvas.setPointPlacement(false);
+				rightCanvas.setPointPlacement(true);
+				rightCanvas.pointsLimit = leftCanvas.points.length;
+				console.log("right canvas max points:",rightCanvas.pointsLimit);
+				currentCanvas = CANVAS_TYPE.RIGHT;
+				notifText = "Validated left canvas, now unlocking right canvas";
+				leftCanvas.redraw();
+			}
+		}
+
+		else
+		{
+			notifColor = FAILURE_RED;
+			notifText = "The left set is not in general position";
 		}
 	}
 
@@ -426,7 +435,7 @@ function validatePointSet()
 			notifColor = FAILURE_RED;
 		}
 
-		else
+		else if (pointSetInGeneralPosition(rightCanvas.points))
 		{
 			let rightCanvasConvexHullSize = rightCanvas.computeConvexHull(convexHullSize);
 
@@ -447,6 +456,12 @@ function validatePointSet()
 				rightCanvas.reset();
 				rightCanvas.pointsLimit = leftCanvas.points.length;
 			}
+		}
+
+		else
+		{
+			notifColor = FAILURE_RED;
+			notifText = "The right set is not in general position";
 		}
 
 	}

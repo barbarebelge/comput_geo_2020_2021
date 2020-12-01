@@ -1288,3 +1288,36 @@ function orientationsDifferent(seg1, seg2, allowAligned = true)
 
     return getOrientation(seg1.p1, seg1.p2, seg2.p1) !== getOrientation(seg1.p1, seg1.p2, seg2.p2);
 }
+
+
+function pointSetInGeneralPosition(pointArray)
+{	
+	const NB_PTS = pointArray.length;
+
+	if ( NB_PTS < 3 || (NB_PTS === 3 && ! isAligned(pointArray[0], pointArray[1], pointArray[2])) )
+	{
+		return true;
+	}
+
+	for (let i = 0 ; i < NB_PTS ; ++i)
+	{
+		for (let j = 0 ; j < NB_PTS ; ++j)
+		{
+			if (j !== i)
+			{
+				for (let k = 0 ; k < NB_PTS ; ++k)
+				{
+					if (k !== j && k !== i)
+					{
+						if (isAligned(pointArray[i], pointArray[j], pointArray[k]))
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return true;
+}
