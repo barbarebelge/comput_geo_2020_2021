@@ -57,7 +57,12 @@ var makeCanvas = function(p) {
 		{
 		    p.textSize(12);
 		    p.showPoints();
-		    p.showConvexHull();
+
+		    if (! p.triangulations || p.triangulations.length <= 0)
+	    	{
+		    	p.showConvexHull();
+	    	}
+
 		    //p.showSegments(p.allInnerSegments); // TMP display
 		    if(p.allInnerSegmentsCombinations.length != 0){ // TMP display
 		    	p.showSegments(p.allInnerSegmentsCombinations[p.combinationIdx], "red");
@@ -119,61 +124,6 @@ var makeCanvas = function(p) {
 							{
 								showNotification("Point limit reached", NOTIF_BLUE);
 								validatePointSet();
-
-								// Triangulation with lists
-								p.triangulations = getAllTriangulations(p.points, p.convexHullPoints);
-
-								/* // TO REMOVE: used to verify polygon class and areSegmentPoints()
-								let polygon = new Polygon(p.convexHullPoints);
-								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[1]));
-								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[1],p.convexHullPoints[0]));
-								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[p.convexHullPoints.length-1]));
-								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[p.convexHullPoints.length-1], p.convexHullPoints[0]));
-								console.log("Polygon Segment: "+polygon.areSegmentPoints(p.convexHullPoints[0],p.convexHullPoints[2]));
-								*/
-
-								// Triangulation with DCEL 
-								/* 
-								console.log("Triangulation Faces: " + getPointSetTriangulationFacesNb(p.points.length, p.convexHullPoints.length));
-								console.log("Triangulation Edges: " + getPointSetTriangulationEdgesNb(p.points.length, p.convexHullPoints.length));
-								let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(p.points.length, p.convexHullPoints.length);
-								console.log("Triangulation Inner Edges: " + triangInnerEdgesNb);
-								p.allInnerSegments = getAllInnerSegmentsOfPointSet(p.points, p.convexHullPoints);
-								console.log("All inner segments len: " + p.allInnerSegments.length);
-								p.allInnerSegmentsCombinations = getCombinationsOfSizeK(p.allInnerSegments, triangInnerEdgesNb)
-								console.log("All inner segments combinations len: " + p.allInnerSegmentsCombinations.length);
-								//console.log("All Inner Segments Combinations");
-								//console.log(p.allInnerSegmentsCombinations);
-								let dcel = new DCELGraph();
-								dcel.initFromConvexHullPoints(p.convexHullPoints);
-								p.allInnerSegmentsCombinations = getSegsCombiWithNoIntersect(p.allInnerSegmentsCombinations);
-								console.log("Combis with no intersection: " + p.allInnerSegmentsCombinations.length);
-								p.combinationIdx = 0;
-								let combi = p.allInnerSegmentsCombinations[p.combinationIdx];
-								console.log(combi);
-								console.log("Segments List Intersect: " + areSegmentsListIntersect(combi));
-								let seg = combi[0];
-								//let seg = new Segment(dcel.vertices[0].pt, dcel.vertices[2].pt);
-								let vtxIdx = dcel.getCommonVertexIdxOfSegment(seg);
-								p.vtxPt = dcel.getVertexOfIdx(vtxIdx).pt;
-								//dcel.addEdgeFromSegment(seg, vtxIdx);
-								//p.dcelSegments = getEdgesToSegments(dcel.getAllIncidentOutEdgesOfVertex(dcel.vertices[0]));
-								//p.dcelSegments = dcel.getFaceSegsFromIdx(0);
-								//p.dcelSegments = dcel.getFaceSegsFromIdx(1);
-								//dcel.addSegments(combi);
-								console.log("Vtx Idx: "+ vtxIdx);
-								p.dcelSegments = dcel.getEdgesSegments();
-
-								//console.log("Vertex Inside: ", dcel.isVertexInside(dcel.vertices[0]));
-								//console.log("Vertices Connected: " + dcel.areVerticesConnected(dcel.vertices[1],dcel.vertices[0]));
-								//console.log("Dcel connect: "+dcel.connectVerticesIfNotIntersect(dcel.vertices[0],dcel.vertices[1]));
-								//console.log("Dcel connect: "+dcel.connectVerticesIfNotIntersect(dcel.vertices[0],dcel.vertices[2]));
-								//console.log("Dcel connect: "+dcel.connectVerticesIfNotIntersect(dcel.vertices[1],dcel.vertices[3]));
-								
-								console.log("Faces size: "+dcel.getFacesSize());
-								//p.dcelSegments = dcel.getIncidentOutEdgesOfVertexIdx(3);
-								//p.dcelSegments = dcel.getFaceSegsFromIdx(0);
-								*/
 							}
 						}
 					}
@@ -325,11 +275,18 @@ var makeCanvas = function(p) {
 		return nb_extreme_points;
 	};
 
+	/** Launches the computation of all the triangulations of the set. */
+	p.computeTriangulations = function()
+	{
+		p.triangulations = getAllTriangulations(p.points, p.convexHullPoints);
+	};
+
 
 	/** Enable or disable point placement. */	
 	p.setPointPlacement = function (boolVal) {
 		p.canPlacePoints = boolVal;
 	};
+
 
 	// This Redraws the Canvas when resized
 	p.windowResized = function () {
@@ -358,7 +315,7 @@ const CANVAS_TYPE = {
 Object.freeze(CANVAS_TYPE);
 
 
-var currentCanvas = CANVAS_TYPE.LEFT;
+var currentCanvasType = CANVAS_TYPE.LEFT;
 var leftCanvas = new p5(makeCanvas, 'left-canvas');
 var rightCanvas = new p5(makeCanvas, 'right-canvas');
 rightCanvas.setPointPlacement(false);
@@ -394,12 +351,13 @@ console.log("Segs have an intersection between their endpoints: " + segmentsInte
 console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg4, seg3, false));
 */
 
+
 function validatePointSet()
 {
 	var notifColor = NOTIF_BLUE;
 	var notifText = null;
 		
-	if (currentCanvas === CANVAS_TYPE.LEFT)
+	if (currentCanvasType === CANVAS_TYPE.LEFT)
 	{
 		if (pointSetInGeneralPosition(leftCanvas.points))
 		{
@@ -413,7 +371,7 @@ function validatePointSet()
 				rightCanvas.setPointPlacement(true);
 				rightCanvas.pointsLimit = leftCanvas.points.length;
 				console.log("right canvas max points:",rightCanvas.pointsLimit);
-				currentCanvas = CANVAS_TYPE.RIGHT;
+				currentCanvasType = CANVAS_TYPE.RIGHT;
 				notifText = "Validated left canvas, now unlocking right canvas";
 				leftCanvas.redraw();
 			}
@@ -421,12 +379,13 @@ function validatePointSet()
 
 		else
 		{
+			leftCanvas.reset();
 			notifColor = FAILURE_RED;
 			notifText = "The left set is not in general position";
 		}
 	}
 
-	else if (currentCanvas === CANVAS_TYPE.RIGHT)
+	else if (currentCanvasType === CANVAS_TYPE.RIGHT)
 	{
 		if (rightCanvas.points.length !== leftCanvas.points.length)
 		{
@@ -443,7 +402,7 @@ function validatePointSet()
 			if (rightCanvasConvexHullSize)
 			{
 				rightCanvas.setPointPlacement(false);
-				currentCanvas = CANVAS_TYPE.NONE;
+				currentCanvasType = CANVAS_TYPE.NONE;
 				notifText = "Validated right canvas, no canvas can be edited anymore";
 				rightCanvas.redraw();
 			}
@@ -460,6 +419,8 @@ function validatePointSet()
 
 		else
 		{
+			rightCanvas.reset();
+			rightCanvas.pointsLimit = leftCanvas.points.length;
 			notifColor = FAILURE_RED;
 			notifText = "The right set is not in general position";
 		}
@@ -473,8 +434,8 @@ function validatePointSet()
 	}
 
 	showNotification(notifText, notifColor);
-
 }
+
 
 
 /** Resets both left and right canvas. */
@@ -483,9 +444,41 @@ function reset()
 	leftCanvas.reset();
 	rightCanvas.reset();
 
-	currentCanvas = CANVAS_TYPE.LEFT;
+	currentCanvasType = CANVAS_TYPE.LEFT;
 	leftCanvas.setPointPlacement(true);
 	rightCanvas.setPointPlacement(false);
 
 	console.log("reset done");
+}
+
+
+/*
+ *
+ * ======================================  CLICK CALLBACKS ============================================
+ *
+ * 
+ */
+
+
+function validatePointSetClicked()
+{
+	validatePointSet();
+}
+
+
+function findCompatibleTriangulationsClicked()
+{
+	// if both canvas have been validated successfully, compute the triangulations
+	// of both point sets
+	if (currentCanvasType === CANVAS_TYPE.NONE)
+	{
+		showNotification("Computing triangulations...", NOTIF_BLUE);
+		leftCanvas.computeTriangulations();
+		leftCanvas.redraw();
+		rightCanvas.computeTriangulations();
+		rightCanvas.redraw();
+		showNotification("Computing triangulations done.", SUCCESS_GREEN);
+
+	}
+
 }

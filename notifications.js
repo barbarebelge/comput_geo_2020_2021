@@ -8,10 +8,10 @@ var notifTimeout = null;
 /** Hides all pending notifications and resets the corresponding html elements. */
 function resetNotifications() {
     console.log("reset notifications");
-    // if (notifTimeout) 
-    // {
-    //     clearTimeout(notifTimeout);
-    // }
+    if (notifTimeout) 
+    {
+        clearTimeout(notifTimeout);
+    }
 
     notifTimeout = null;
     var elem = document.getElementsByClassName("res-txt")[0];
@@ -22,20 +22,27 @@ function resetNotifications() {
 /** Shows a notification message for a given number of microseconds
  * (the default is 3 seconds). If a negative timeout is passed, the
  * notification will stay displayed indefinitely. */
-function showNotification(txt, color = "black", nbMilisec = 4000) {
+function showNotification(txt, color = "black", nbMillisec = 4000) {
 
-    if (notifTimeout) 
-    {
-        clearTimeout(notifTimeout);
-    }
+    resetNotifications();
+    // if (notifTimeout) 
+    // {
+    //     // clearTimeout(notifTimeout);
+    //     // notifTimeout = null;
+    //     resetNotifications();
+    // }
 
     var elem = document.getElementsByClassName("res-txt")[0];
     elem.innerText = txt;
     elem.style.color = color;
 
-    if (nbMilisec > 0) 
+    if (nbMillisec > 0) 
     {
-        notifTimeout = setTimeout(function(){resetNotifications();}, nbMilisec);
+        notifTimeout = setTimeout(function(){resetNotifications();}, nbMillisec);
     }
 }
 
+// async function showNotifificationAsync(txt, color = "black", nbMillisec = 4000)
+// {
+//     showNotification(txt, color, nbMillisec);
+// }
