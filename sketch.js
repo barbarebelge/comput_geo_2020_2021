@@ -74,6 +74,7 @@ var makeCanvas = function(p) {
 			if(p.vtxPt !== null){
 				p.showPoint(p.vtxPt, "green");
 			}
+			// console.log("\nTRIANGULATION 0:\n", p.triangulations[0].length,'\n',p.triangulations[0]);
 			if(p.triangulations.length !== 0){
 				p.showTriangulation(p.triangulations[0], "orange");
 			}
@@ -135,16 +136,6 @@ var makeCanvas = function(p) {
 	};
 
 
-	/** Draws a simple line between two points. */
-	p.connectPoints = function (pt1, pt2) {
-		p.strokeWeight(1);
-		p.stroke(0, 0, 0);
-		p.fill("black");
-		p.line(pt1.x, pt1.y, pt2.x, pt2.y);
-		p.strokeWeight(1);
-		p.noStroke();
-	};
-
 	p.showPoint = function (point, col="black"){
 		p.push();
 		let radius = POINT_RADIUS * 2;
@@ -152,7 +143,7 @@ var makeCanvas = function(p) {
 		p.fill(p.color(col)); 
 		p.ellipse(point.x, point.y, radius);
 		p.pop();
-	}
+	};
 
 	/** Draws the ellipses for the points and marks the last clicked one. */
 	p.showPoints = function () {
@@ -179,11 +170,17 @@ var makeCanvas = function(p) {
 
 	/** Connects and highllights the convex hull shape if it exists. */
 	p.showConvexHull = function () {
-		if (p.convexHullPoints.length > 2)
+		const NB_CH_POINTS = p.convexHullPoints.length;
+		if (NB_CH_POINTS > 2)
 		{
-			for (let i = 0; i < p.convexHullPoints.length; ++i) 
+			let pt1 = null;
+			let pt2 = null;
+			for (let i = 0; i < NB_CH_POINTS; ++i) 
 			{
-			  p.connectCHPoints(i, (i + 1) % p.convexHullPoints.length);
+				pt1 = p.convexHullPoints[i];
+				pt2 = p.convexHullPoints[(i + 1) % NB_CH_POINTS];
+				p.connectPoints(pt1, pt2, "#66ff66", 4);
+			  // p.connectCHPoints(i, (i + 1) % p.convexHullPoints.length);
 			}
 		}
 	};
@@ -198,24 +195,37 @@ var makeCanvas = function(p) {
 			p.line(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
 		}
 		p.pop();
-	}
+	};
 
 	p.showTriangulation = function (triangulation, color="black"){
-		for(let i = 0; i < triangulation.length; i++){
-			p.showSegments(triangulation[i], color);
+		for(let i = 0; i < triangulation.length; ++i){
+			for (let j = 0; j < 3 ; ++j)
+			{
+				let triangle = triangulation[i];
+				p.connectPoints(triangle[j], triangle[(j+1)%3], color, 4);
+			}
 		}
 		
-	}
+	};
 
 	/** Draws a simple line between two points. */
-	p.connectPoints = function (pt1, pt2) {
-		// p.strokeWeight(1);
-		// p.stroke(0, 0, 0);
-		// p.fill("black");
+	p.connectPoints = function (pt1, pt2, color="black", strokeWeight=1) {
+		p.push();
+		p.strokeWeight(strokeWeight);
+		p.stroke(color);
 		p.line(pt1.x, pt1.y, pt2.x, pt2.y);
-		// p.strokeWeight(1);
-		// p.noStroke();
+		p.pop();
 	};
+
+	/* Draws a simple line between two points. */
+	// p.connectPoints = function (pt1, pt2) {
+	// 	// p.strokeWeight(1);
+	// 	// p.stroke(0, 0, 0);
+	// 	// p.fill("black");
+	// 	p.line(pt1.x, pt1.y, pt2.x, pt2.y);
+	// 	// p.strokeWeight(1);
+	// 	// p.noStroke();
+	// };
 
 
 	/** Draws a colored line between two convex hull points points. */

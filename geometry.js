@@ -2,42 +2,61 @@
 
 
 class Point {
-  constructor(x, y) {
-    if (typeOf(x) !== "number" && typeOf(y) !== "number") {
-      throw new TypeError("Operands of Point constructor should be numbers");
-    }
-    this.x = x;
-    this.y = y;
-  }
+	constructor(x, y) 
+	{
+		if (typeOf(x) !== "number" && typeOf(y) !== "number") 
+		{
+			throw new TypeError("Operands of Point constructor should be numbers");
+		}
+		this.x = x;
+		this.y = y;
+	}
+
+	equal(pt)
+	{
+		return (this.x === pt.x) && (this.y === p2.y);
+	}
 }
+
 
 class Triangle {
-  constructor(p1, p2, p3) {
-    if (!p1 || !p2 || !p3) {
-      throw new TypeError(
-        "Operands of Triangle constructor should be defined and non null"
-      );
-    }
-    if (! (p1 instanceof Point) && ! (p2 instanceof Point) && ! (p3 instanceof Point)) {
-      throw new TypeError("Operands of Triangle constructor should be Points");
-    }
-    this.p1 = p1;
-    this.p2 = p2;
-    this.p3 = p3;
-  }
+	constructor(p1, p2, p3) 
+	{
+		if (!p1 || !p2 || !p3) 
+		{
+		  throw new TypeError(
+		    "Operands of Triangle constructor should be defined and non null"
+		  );
+		}
+
+		if (! (p1 instanceof Point) && ! (p2 instanceof Point) && ! (p3 instanceof Point)) 
+		{
+			throw new TypeError("Operands of Triangle constructor should be Points");
+		}
+
+		this.p1 = p1;
+		this.p2 = p2;
+		this.p3 = p3;
+	}
 }
 
+
 class Segment {
-  constructor(p1, p2) {
-    if (!p1 || !p2) {
-      throw new TypeError("Operands of Segment should be defined and non null");
-    }
-    if (! (p1 instanceof Point) && ! (p2 instanceof Point)) {
-      throw new TypeError("Operands of Segment constructor should be Points");
-    }
-    this.p1 = p1;
-    this.p2 = p2;
-  }
+	constructor(p1, p2) 
+	{
+		if (!p1 || !p2) 
+		{
+		  throw new TypeError("Operands of Segment should be defined and non null");
+		}
+
+		if (! (p1 instanceof Point) && ! (p2 instanceof Point)) 
+		{
+		  throw new TypeError("Operands of Segment constructor should be Points");
+		}
+
+		this.p1 = p1;
+		this.p2 = p2;
+	}
 }
 
 class Polygon{
@@ -719,9 +738,15 @@ function isRightTurn(p1, pAngle, p2) {
     return getOrientation(p1, pAngle, p2) === ORIENT.RIGHT;
 }
 
-function isAligned(p1, pAngle, p2) {
+function isAlignment(p1, pAngle, p2) {
     return getOrientation(p1, pAngle, p2) === ORIENT.ALIGNED;
 }
+
+function isApproximatelyAlignment(p1, pAngle, p2) {
+	let orientDet = getOrientationDeterminant(p1, pAngle, p2);
+	return Math.abs(orientDet) <= 10;
+}
+
 
 function getOrientation(p1, pAngle, p2) {
     var orientDet = getOrientationDeterminant(p1, pAngle, p2);
@@ -855,7 +880,8 @@ function getAllTriangulations(pointSet, convexHullPoints){
 
     let triangulations = [];
     for(let i = 0; i < allInnerSegmentsCombinations.length; i++){
-        triangulations.push(getTrianglesFromCombi(allInnerSegmentsCombinations[i], convexHullPoints));
+    	let triangulation = getTrianglesFromCombi(allInnerSegmentsCombinations[i], convexHullPoints);
+        triangulations.push(triangulation);
     }
     return triangulations;
 }
@@ -942,8 +968,9 @@ function getTrianglesFromCombi(innerSegsCombi, convexHullPoints){
         for (let j = 0; j < segs.length; j++){
             for (let k = 0; k < segs.length; k++){
                 if (i!==j && i!==k && j!==k){
-                    if(segsFormATriangle(segs[i], segs[j], segs[k])){
-                        triangles.push([segs[i], segs[j], segs[k]]);
+                	let trianglePoints = getTrianglePointsFromSegments(segs[i], segs[j], segs[k]);
+                    if(trianglePoints !== null){
+                        triangles.push(trianglePoints);
                     }
                 }
             }
@@ -952,9 +979,12 @@ function getTrianglesFromCombi(innerSegsCombi, convexHullPoints){
     return triangles;
 }
 
-// Triangle if each pair of segments has a common point
-// and all the common points are different.
-function segsFormATriangle(seg1, seg2 , seg3){
+
+/**
+ * Returns a triplet of points if the segments passed as argument form exactly a triangle.
+ * Otherwise, returns null.
+ */
+function getTrianglePointsFromSegments(seg1, seg2 , seg3){
     let p1 = segsGetCommonPoint(seg1, seg2);
     let p2 = segsGetCommonPoint(seg1, seg3);
     let p3 = segsGetCommonPoint(seg2, seg3);
@@ -964,9 +994,9 @@ function segsFormATriangle(seg1, seg2 , seg3){
         !arePointsEq(p1,p2) &&
         !arePointsEq(p1,p3) &&
         !arePointsEq(p2,p3)){
-        return true;
+        return [p1, p2, p3];
     }
-    return false;
+    return null;
 }
 
 function segsHaveCommonPoint(seg1, seg2){
@@ -1135,6 +1165,7 @@ function inInterval(val, val1, val2)
 
 /**
  * Returns the magintude of a line segment, which is its length in the euclidean plane.
+ * https://nodedangles.wordpress.com/2010/05/16/measuring-distance-from-a-point-to-a-line-segment/
  */
 function lineMagnitude(x1, y1, x2, y2) 
 {
@@ -1143,6 +1174,7 @@ function lineMagnitude(x1, y1, x2, y2)
 
 /**
  * Returns the distance from a point to a line.
+ * https://nodedangles.wordpress.com/2010/05/16/measuring-distance-from-a-point-to-a-line-segment/
  */
 function pointLineDistance(px, py, x1, y1, x2, y2) 
 {
@@ -1294,7 +1326,7 @@ function pointSetInGeneralPosition(pointArray)
 {	
 	const NB_PTS = pointArray.length;
 
-	if ( NB_PTS < 3 || (NB_PTS === 3 && ! isAligned(pointArray[0], pointArray[1], pointArray[2])) )
+	if ( NB_PTS < 3 || (NB_PTS === 3 && ! isAlignment(pointArray[0], pointArray[1], pointArray[2])) )
 	{
 		return true;
 	}
@@ -1309,7 +1341,7 @@ function pointSetInGeneralPosition(pointArray)
 				{
 					if (k !== j && k !== i)
 					{
-						if (isAligned(pointArray[i], pointArray[j], pointArray[k]))
+						if (isAlignment(pointArray[i], pointArray[j], pointArray[k]))
 						{
 							return false;
 						}
@@ -1320,4 +1352,50 @@ function pointSetInGeneralPosition(pointArray)
 	}
 
 	return true;
+}
+
+
+
+// function sameTriangles(tri1, tri2)
+// {
+// 	for (let pt of tri1)
+// 	{
+// 		if ( ! (pt.equals(tri1[0]) && pt.equals(tri1[1]) && pt.equals(tri1[2])) )
+// 		{
+// 			return false;
+// 		}
+// 	}
+// 	return true;
+// }
+
+
+function isCompatibleTriangulations(triangulation1, triangulation2)
+{	
+	let orderedTriangulation1
+	for (let triangle of triangulaion1)
+	{
+
+	}
+
+	let allSame = true;
+	for (let triangle1 of triangulation1)
+	{
+		let matchAny = false;
+		for (let triangle2 of triangulation2)
+		{
+			if (sameTriangles(triangle1, triangle2))
+			{
+				matchAny = true;
+				break;
+			}
+			
+		}
+
+		// we iterated on all triangles of the second list without finding the same
+		// triangle as triangle1, so the triangulations are not compatible
+		if (! matchAny)
+		{
+
+		}
+	}
 }
