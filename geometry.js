@@ -764,8 +764,44 @@ function getOrientation(p1, pAngle, p2) {
     }
 }
 
+/*
+tri is a triangle
+r is a point
+return true if r is strictly in xyz else return false
+*/
+function isPointInTriangle(tri , r) {
+    let orients = [];
+    let isInside = false;
+    orients.push(getOrientation(tri.p1, tri.p2, r));
+    orients.push(getOrientation(tri.p2, tri.p3, r));
+    orients.push(getOrientation(tri.p3, tri.p1, r));
+    let onLeft = 0;
+    let onRight = 0;
+    let onLine = 0;
+    for (orient of orients) {
+        if (orient === ORIENT.RIGHT) {
+            onRight += 1;
+        } else if (orient === ORIENT.ALIGNED) {
+            onLine += 1;
+        } else if (orient === ORIENT.LEFT) {
+            onLeft += 1;
+        }
+    }
+    if (onLeft === 3 || onRight === 3) {
+        isInside = true;
+    }
+  return isInside;
+}
 
-
+// return true if empty else return false
+function isTriangleEmptyOfPoints(triangle, points){
+    for(let i = 0; i < points.length; i++){
+        if(isPointInTriangle(triangle , points[i])){
+            return false;
+        }
+    }
+    return true;
+}
 
 /** 
  * Sort the points rtadially according to the leftmost point passed as argument.
@@ -880,7 +916,7 @@ function getAllTriangulations(pointSet, convexHullPoints){
 
     let triangulations = [];
     for(let i = 0; i < allInnerSegmentsCombinations.length; i++){
-    	let triangulation = getTrianglesFromCombi(allInnerSegmentsCombinations[i], convexHullPoints);
+    	let triangulation = getTrianglesFromCombi(pointSet, allInnerSegmentsCombinations[i], convexHullPoints);
         console.log("TRIANGLES NB: " + triangulation.length);
         triangulations.push(triangulation);
     }
@@ -967,8 +1003,8 @@ function getConvexHullSegs(convexHullPoints){
     return segments;
 }
 
-function getTrianglesFromCombi(innerSegsCombi, convexHullPoints){
-    // each triangle represent a face
+function getTrianglesFromCombi(pointSet, innerSegsCombi, convexHullPoints){
+    // each triangle represent a face of the triangulations
     let triangles = [];
     let segs = [];
     segs = segs.concat(innerSegsCombi);
@@ -981,14 +1017,16 @@ function getTrianglesFromCombi(innerSegsCombi, convexHullPoints){
         let trianglePoints = getTrianglePointsFromSegments(tripleSegs[0], tripleSegs[1], tripleSegs[2]);
         if(trianglePoints !== null){
             let tri2 = new Triangle(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-            // Special case the convex hull is a triangle and we need to ignore it.
-        	if(convexHullPoints.length === 3){
-                if(!areTrianglesEq(tri1, tri2)){
-               	    triangles.push(trianglePoints);
-            	}
-            }
-            else{
-                triangles.push(trianglePoints);
+            if(isTriangleEmptyOfPoints(tri2, pointSet)){ // if the triangle does not contain other triangles
+                // Special case the convex hull is a triangle and we need to ignore it.
+            	if(convexHullPoints.length === 3){
+                    if(!areTrianglesEq(tri1, tri2)){
+                   	    triangles.push(trianglePoints);
+                	}
+                }
+                else{
+                    triangles.push(trianglePoints);
+                }
             }
         }
     }
