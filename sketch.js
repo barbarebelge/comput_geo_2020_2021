@@ -21,8 +21,9 @@ var makeCanvas = function(p) {
 	p.dcelSegments = [];
 	p.vtxPt = null;
 	p.triangulations = [];
-
-
+	p.facesNb = 0;
+	p.expectedFacesNb = 0;
+	p.hslColors = [];
 	p.reset = function ()
 	{
 		p.points = [];
@@ -37,6 +38,9 @@ var makeCanvas = function(p) {
 		p.dcelSegments = [];
 		p.vtxPt = null;
 		p.triangulations = [];
+		p.facesNb = 0;
+		p.expectedFacesNb = 0;
+		p.hslColors = [];
 		p.redraw();
 	};
 
@@ -55,9 +59,6 @@ var makeCanvas = function(p) {
 		} 
 		else 
 		{
-		    p.textSize(12);
-		    p.showPoints();
-
 		    if (! p.triangulations || p.triangulations.length <= 0)
 	    	{
 		    	p.showConvexHull();
@@ -76,8 +77,13 @@ var makeCanvas = function(p) {
 			}
 			// console.log("\nTRIANGULATION 0:\n", p.triangulations[0].length,'\n',p.triangulations[0]);
 			if(p.triangulations.length !== 0){
-				p.showTriangulation(p.triangulations[0], "orange");
+				p.showColoredTriangles(p.triangulations[0], p.hslColors);
+				p.showTriangulation(p.triangulations[0]);
 			}
+
+			// draw the points at the end to see them better
+			p.textSize(12);
+		    p.showPoints();
 		}
 	};
 
@@ -208,6 +214,22 @@ var makeCanvas = function(p) {
 		
 	};
 
+	p.showColoredTriangles = function(triangles, hslColors){
+		p.push();
+		p.noStroke();
+  		p.colorMode(p.HSB, 100);
+		for(let i = 0; i < triangles.length; i++){
+			let p1 = triangles[i][0];
+			let p2 = triangles[i][1];
+			let p3 = triangles[i][2];
+			let hslColor = hslColors[i];
+  			p.fill(hslColor[0], hslColor[1], hslColor[2]);
+			p.triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+
+		}
+		p.pop();
+	}
+
 	/** Draws a simple line between two points. */
 	p.connectPoints = function (pt1, pt2, color="black", strokeWeight=1) {
 		p.push();
@@ -289,6 +311,11 @@ var makeCanvas = function(p) {
 	p.computeTriangulations = function()
 	{
 		p.triangulations = getAllTriangulations(p.points, p.convexHullPoints);
+		p.facesNb = p.triangulations[0].length;
+		p.expectedFacesNb = getPointSetTriangulationFacesNb(p.points.length, p.convexHullPoints.length);
+		if(p.facesNb !== p.expectedFacesNb){
+			console.log("Faces nb is not right, expected one: " + p.expectedFacesNb + " the current one: " +p.facesNb);
+		}
 	};
 
 
@@ -483,9 +510,17 @@ function findCompatibleTriangulationsClicked()
 	if (currentCanvasType === CANVAS_TYPE.NONE)
 	{
 		showNotification("Computing triangulations...", NOTIF_BLUE);
+		console.log("LEFT CANVAS Triangulations Computation");
 		leftCanvas.computeTriangulations();
+		let hslColors = getHSLColors(leftCanvas.facesNb);
+		leftCanvas.hslColors = hslColors;
 		leftCanvas.redraw();
+		console.log("RIGHT CANVAS Triangulations Computation");
 		rightCanvas.computeTriangulations();
+		if(leftCanvas.facesNb !== rightCanvas.facesNb){
+			console.log("The number of faces are different between the two point sets triangulations.");
+		}
+		rightCanvas.hslColors = hslColors;
 		rightCanvas.redraw();
 		showNotification("Computing triangulations done.", SUCCESS_GREEN);
 

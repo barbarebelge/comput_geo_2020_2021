@@ -881,6 +881,7 @@ function getAllTriangulations(pointSet, convexHullPoints){
     let triangulations = [];
     for(let i = 0; i < allInnerSegmentsCombinations.length; i++){
     	let triangulation = getTrianglesFromCombi(allInnerSegmentsCombinations[i], convexHullPoints);
+        console.log("TRIANGLES NB: " + triangulation.length);
         triangulations.push(triangulation);
     }
     return triangulations;
@@ -931,6 +932,15 @@ function arePointsEq(p1, p2){
     return false;
 }
 
+function areTrianglesEq(tri1, tri2){
+	if((arePointsEq(tri1.p1, tri2.p1) || arePointsEq(tri1.p1, tri2.p2) || arePointsEq(tri1.p1, tri2.p3))
+		&& (arePointsEq(tri1.p2, tri2.p1) || arePointsEq(tri1.p2, tri2.p2) || arePointsEq(tri1.p2, tri2.p3))
+		&& (arePointsEq(tri1.p3, tri2.p1) || arePointsEq(tri1.p3, tri2.p2) || arePointsEq(tri1.p3, tri2.p3))){
+		return true;
+	}
+    return false;
+}
+
 function areSegmentsListIntersect(segments){
     intersect = false; 
     for(let i = 0; i < segments.length; i++){
@@ -964,15 +974,21 @@ function getTrianglesFromCombi(innerSegsCombi, convexHullPoints){
     segs = segs.concat(innerSegsCombi);
     let convexHullSegs = getConvexHullSegs(convexHullPoints);
     segs = segs.concat(convexHullSegs);
-    for (let i = 0; i < segs.length; i++){
-        for (let j = 0; j < segs.length; j++){
-            for (let k = 0; k < segs.length; k++){
-                if (i!==j && i!==k && j!==k){
-                	let trianglePoints = getTrianglePointsFromSegments(segs[i], segs[j], segs[k]);
-                    if(trianglePoints !== null){
-                        triangles.push(trianglePoints);
-                    }
-                }
+    let combisOfTripleSegs = getCombinationsOfSizeK(segs, 3);
+    let tri1 = new Triangle(convexHullPoints[0], convexHullPoints[1], convexHullPoints[2]);
+    for (let i = 0; i < combisOfTripleSegs.length; i++){
+        tripleSegs = combisOfTripleSegs[i];
+        let trianglePoints = getTrianglePointsFromSegments(tripleSegs[0], tripleSegs[1], tripleSegs[2]);
+        if(trianglePoints !== null){
+            let tri2 = new Triangle(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
+            // Special case the convex hull is a triangle and we need to ignore it.
+        	if(convexHullPoints.length === 3){
+                if(!areTrianglesEq(tri1, tri2)){
+               	    triangles.push(trianglePoints);
+            	}
+            }
+            else{
+                triangles.push(trianglePoints);
             }
         }
     }
@@ -1399,3 +1415,54 @@ function isCompatibleTriangulations(triangulation1, triangulation2)
 		}
 	}
 }
+
+// get different colors in a random order
+function getHSLColors(colorsNb) {
+	// HSL: hue, saturation, lightness
+	// =HSB: hue, saturation, brightness
+	// This function return at maximum 10 000 colors
+	let hslColors = [];
+	if(colorsNb <= 100){ // this allow to have very different colors when we have a small number of colors
+		let step = Math.ceil(100/colorsNb);
+		for (let j = 0; j < colorsNb; j++) {
+			hslColors.push([j*step, 100, 100]);
+		}
+  	}
+	else{
+		let linesNb = Math.ceil(colorsNb / 100);
+		//console.log(linesNb);
+		let columnsNb = colorsNb;
+		if (colorsNb > 100) {
+			columnsNb = 100;
+		}
+		for (let i = 0; i < linesNb; i++) {
+			for (let j = 0; j < columnsNb; j++) {
+				// first element of the list is the hue
+				// and it is in purcentage not in degrees
+				// (this values gives the base color)
+				// (is used to browse the colors)
+				// second is the stuartion
+				// (high value the color is opaque)
+				// (low value the color is transparent)
+				// third is the brightness
+				// (high  value the color is very lighty)
+				// (low valeu the color is very darky)
+				hslColors.push([j, 100 - i, 100]);
+			}
+		}
+	}   
+  return shuffleList(hslColors);
+}
+
+// shuffle list
+function shuffleList(list) {
+	var j, tmp, i;
+	for (i = list.length - 1; i > 0; i--) {
+		j = Math.floor(Math.random() * (i + 1)); // random index
+		tmp = list[i];
+		list[i] = list[j];
+		list[j] = tmp;
+	}
+	return list;
+}
+
