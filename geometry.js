@@ -102,9 +102,9 @@ class Triangle {
 		for (let i = 0; i < NB_POINTS; ++i) 
 		{
 			prevOrient = orient;
-			let a = trianglePoints[i % NB_POINTS];
+			let a = trianglePoints[i];
 			let c = trianglePoints[(i + 1) % NB_POINTS];
-			orient = getOrientation(a, pt, c);
+			orient = getOrientation(a, c, pt);
 
 			if (prevOrient !== null && prevOrient !== orient) 
 			{

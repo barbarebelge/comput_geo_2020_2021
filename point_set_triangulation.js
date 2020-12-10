@@ -107,10 +107,10 @@ function getTrianglePointsFromSegments(seg1, seg2, seg3)
     let p1 = seg1.getCommonExtremity(seg2);
     let p2 = seg1.getCommonExtremity(seg3);
     let p3 = seg2.getCommonExtremity(seg3);
-
-    if(p1 !== null && p2 !== null && p3 !== null && Point.allDifferent(p1, p2, p3))
+    let pList = [p1, p2, p3];
+    if(p1 !== null && p2 !== null && p3 !== null && Point.allDifferent(pList))
     {
-        return [p1, p2, p3];
+        return pList;
     }
 
     return null;
