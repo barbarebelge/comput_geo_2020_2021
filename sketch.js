@@ -417,7 +417,7 @@ function validatePointSet()
 		{
 			leftCanvas.reset();
 			notifColor = FAILURE_RED;
-			notifText = "The left set is not in general position";
+			notifText = "Left set: expect general position and a sufficient point spacing";
 		}
 	}
 
@@ -458,7 +458,7 @@ function validatePointSet()
 			rightCanvas.reset();
 			rightCanvas.pointsLimit = leftCanvas.points.length;
 			notifColor = FAILURE_RED;
-			notifText = "The right set is not in general position";
+			notifText = "Right set: expect general position and a sufficient point spacing";
 		}
 
 	}

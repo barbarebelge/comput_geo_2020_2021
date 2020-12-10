@@ -346,7 +346,7 @@ function isAlignment(p1, pAngle, p2) {
 
 function isApproximatelyAlignment(p1, pAngle, p2) {
 	let orientDet = getOrientationDeterminant(p1, pAngle, p2);
-	return Math.abs(orientDet) <= 10;
+	return Math.abs(orientDet) <= 35;
 }
 
 
@@ -485,8 +485,10 @@ function pointSetInGeneralPosition(pointArray)
 				for (let k = 0 ; k < NB_PTS ; ++k)
 				{
 					if (k !== j && k !== i)
-					{
-						if (isAlignment(pointArray[i], pointArray[j], pointArray[k]))
+					{	
+						// if margin wanted, use isApproximatelyAlignment()
+						// if no margin needed, use isAlignment()
+						if (isApproximatelyAlignment(pointArray[i], pointArray[j], pointArray[k]))
 						{
 							return false;
 						}
