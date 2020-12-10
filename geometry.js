@@ -14,7 +14,39 @@ class Point {
 
 	equals(pt)
 	{
-		return (this.x === pt.x) && (this.y === p2.y);
+		return (this.x === pt.x) && (this.y === pt.y);
+	}
+
+	equalsAny(ptList)
+	{
+		for (let other of ptList)
+		{
+			if (this.equals(other))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static allDifferent(ptList)
+	{	
+		// use indices to make inner loop faster
+		for (let i = 0 ; i < ptList.length ; ++i)
+		{	
+			// this loop is faster since we start from i 
+			// (wrosk since all points before i have been compared with all other points)
+			for (let j = i+1 ; j < ptList.length ; ++j)
+			{
+				if ( ptList[i].equals(ptList[j]) )
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 }
 
@@ -34,10 +66,67 @@ class Triangle {
 			throw new TypeError("Operands of Triangle constructor should be Points");
 		}
 
+		if (! Point.allDifferent(p1, p2, p3))
+		{
+			throw new Error("Operands of Triangle should be distinct Points");
+		}
+
 		this.p1 = p1;
 		this.p2 = p2;
 		this.p3 = p3;
+		this.centroid = new Point( (p1.x + p2.x + p3.x)/3 , (p1.y + p2.y + p3.y)/3 );
 	}
+
+	equals(other)
+	{
+		let otherPoints = [other.p1, other.p2, other.p3];
+
+		if (this.p1.equalsAny(otherPoints) && this.p2.equalsAny(otherPoints) && this.p3.equalsAny(otherPoints))
+		{
+			return true;
+		}
+
+    	return false;
+	}
+
+	contains(pt)
+	{
+		let prevOrient = null;
+		let orient = null;
+		let trianglePoints = [this.p1, this.p2, this.p3];
+		let NB_POINTS = trianglePoints.length;
+
+		// loop over all edges
+		// if all orientations for the selected pair of points applied
+		// to the last added point are the same, then the point is inside the triangle
+		for (let i = 0; i < NB_POINTS; ++i) 
+		{
+			prevOrient = orient;
+			let a = trianglePoints[i % NB_POINTS];
+			let c = trianglePoints[(i + 1) % NB_POINTS];
+			orient = getOrientation(a, pt, c);
+
+			if (prevOrient !== null && prevOrient !== orient) 
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	containsAny(points)
+	{
+	    for(let i = 0; i < points.length; i++)
+	    {
+	        if(this.contains(points[i]))
+	        {
+	            return true;
+	        }
+	    }
+	    return false;
+	}
+
 }
 
 
@@ -54,12 +143,141 @@ class Segment {
 		  throw new TypeError("Operands of Segment constructor should be Points");
 		}
 
+		if (p1.equals(p2))
+		{
+			throw new Error("Operands of Segment should be distinct Points");
+		}
+
 		this.p1 = p1;
 		this.p2 = p2;
+
+		/* Set the extremities using the coordinates's lexicographic order. */
+
+		// if (p1.x < p2.x)
+		// {
+		// 	this.p1 = p1;
+		// 	this.p2 = p2;
+		// }
+		// else if (p1.x > p2.x)
+		// {
+		// 	this.p1 = p2;
+		// 	this.p2 = p1;
+		// }
+		// else // p1.x === p2.x
+		// {
+		// 	if (p1.y < p2.y)
+		// 	{
+		// 		this.p1 = p1;
+		// 		this.p2 = p2;
+		// 	}
+		// 	else
+		// 	{
+		// 		this.p1 = p2;
+		// 		this.p2 = p1;
+		// 	}
+		// }
 	}
+
+	equals(other)
+	{
+		return (this.p1.equals(other.p1) && this.p2.equals(other.p2)) ||
+		       (this.p1.equals(other.p2) && this.p2.equals(other.p1));
+	}
+
+	hasExtremity(pt)
+	{
+		return (pt.equals(this.p1) || pt.equals(this.p2));
+	}
+
+	getCommonExtremity(other)
+	{
+	    if(this.p1.equalsAny([other.p1, other.p2]))
+	    {
+	        return this.p1;
+	    }
+
+	    else if(this.p2.equalsAny([other.p1, other.p2]))
+	    {
+	        return this.p2; 
+	    }
+	   
+	    return null;
+	}
+
+
+	intersectsAny(segList)
+	{
+		for (let other of segList)
+		{
+			if (this.intersects(other))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
+	/** 
+	 * Returns true if the two segments intersect, false otherwise.
+	 * The two segments will intersect if the orientations are different for the first segment according 
+	 * to each extremity of the second segment,
+	 * and similarly the orientations are different for the second segment according to each extremity
+	 * of the first segment. The allowCommonExtremity parameter is useful when building data structures that
+	 * want to test intersections that are distinct from the extremities of the segments.
+	 */
+	intersects(other, allowCommonExtremity = true)
+	{
+		if (this.equals(other))
+		{
+			throw new Error("Segment intersect expects two distinct segments");
+		}
+
+		else if (this.hasExtremity(other.p1) || this.hasExtremity(other.p2))
+		{
+			return allowCommonExtremity;
+		}
+
+		// segments are different and have no common extremity
+		else
+		{
+			let thisOrient1 = getOrientation(this.p1, this.p2, other.p1);
+	    	let thisOrient2 = getOrientation(this.p1, this.p2, other.p2);
+
+	    	let otherOrient1 = getOrientation(other.p1, other.p2, this.p1);
+	    	let otherOrient2 = getOrientation(other.p1, other.p2, this.p2);
+
+		    let orientDifferent = thisOrient1 !== thisOrient2;
+		    let reverseOrientDifferent = otherOrient1 !== otherOrient2;
+
+		    return orientDifferent && reverseOrientDifferent;
+	    }
+
+	}
+
+	
+	static noIntersections(segments, allowCommonExtremity = false)
+	{
+		for (let i = 0 ; i < segments.length ; ++i)
+		{
+			for (let j = i+1 ; j < segments.length ; ++j)
+			{
+				if ( segments[i].intersects(segments[j], allowCommonExtremity) )
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+   
 }
 
+
 class Polygon{
+
     /**
     * @param [list of points] points: the points of the polygon ordered in counter clockwise order 
     */
@@ -72,17 +290,19 @@ class Polygon{
             this.segments.push(segment);
         }
     }
+
     /**
     * @param [point] p1
     * @param [point] p2
     * @return [bool] true if the points p1 and p2 are points of a polygon segment otherwise return false
     */
-    areSegmentPoints(p1, p2){
-        for (let i = 0; i < this.segments.length; i++){
-            if((p1 === this.segments[i].p1 && this.segments[i].p2 === p2) 
-                || (p2 === this.segments[i].p1 && this.segments[i].p2 === p1)){
-                return true;
-            }
+    areSegmentExtremities(p1, p2){
+        for (let seg of this.segments)
+        {
+        	if (seg.hasExtremity(p1) && seg.hasExtremity(p2))
+        	{
+        		return true;
+        	}
         }
         return false;
     }
@@ -95,622 +315,6 @@ const ORIENT = {
 };
 Object.freeze(ORIENT);
 
-
-
-
-class DCELVertex {
-    constructor(pt, edge = null) 
-    {
-        if (!(pt instanceof Point)) 
-        {
-            throw new TypeError("DCELVertex constructor expects pt to be a Point");
-        }
-
-        this.pt = pt;
-        this.outEdge = edge;
-    }
-}
-
-class DCELFace {
-    constructor(edge = null) 
-    {
-        this.startEdge = edge;
-    }
-}
-
-class DCELEdge {
-    constructor(originVertex = null)
-    {
-        this.origin = originVertex;
-        this.prev = null;
-        this.next = null;
-        this.twin = null;
-        this.face = null;
-        // this.pEnd = pEnd;
-    }
-    getTarget(){
-        return this.next.origin;
-    }
-}
-
-class DCELGraph {
-    constructor()
-    {
-        this.vertices = [];
-        this.clockWiseEdges = []; // edges of the exterior face
-        this.counterClockWiseEdges = []; // edges of the interior faces
-        this.faces = []; // without the exteriorFace
-        this.exteriorFace = null;
-    }
-
-    isVertexInside(vertex){
-        for(let i = 0; i < this.vertices.length; i++){
-            if(vertex === this.vertices[i]){
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Get the face containing the new vertex.
-    // Search if the new vertex is in the incident faces of a vertex. 
-    getFaceOfNewVertex(vertex, newVertex){
-        let incidentEdges = this.getIncidentOutEdgesOfVertex(vertex);
-        //console.log(incidentEdges);
-        let face = null;
-        for(let i = 0; i < incidentEdges.length; i++){
-            face = incidentEdges[i].face;
-            let curEdge = face.startEdge;
-            let start = curEdge;
-            let pointInside = true;
-            while(curEdge.next !== start){
-                if(isRightTurn(curEdge.origin.pt, curEdge.getTarget().pt, newVertex.pt)){
-                    pointInside = false;
-                    break;
-                }
-                curEdge = curEdge.next;
-            }
-            if(isRightTurn(curEdge.origin.pt, curEdge.getTarget().pt, newVertex.pt)){
-                pointInside = false;
-            }
-            if(pointInside){
-                break;
-            }
-        }
-        return face;
-    }
-
-    getFacesSize(){
-        let facesSize = [];
-        for(let i = 0; i < this.faces.length; i++){
-            facesSize.push(this.getFaceSegsFromIdx(i).length);
-        }
-        return facesSize;
-    }
-
-    // Get the segments of a face with index faceIdx
-    getFaceSegsFromIdx(faceIdx){
-        let face = this.faces[faceIdx];
-        let start = face.startEdge;
-        let curEdge = start;
-        let faceSegs = [];
-        while(curEdge.next !== start){ // stops at the edge before start
-            faceSegs.push(this.getEdgeSegment(curEdge));
-            curEdge = curEdge.next;
-        }
-        faceSegs.push(this.getEdgeSegment(curEdge));
-        return faceSegs;
-    }
-
-    // Get the segment of the edge
-    getEdgeSegment(edge){
-        let seg = new Segment(edge.origin.pt, edge.next.origin.pt);
-        return seg;
-    }
-
-    // Return the segments of the edges which are in counter clockwise.
-    getEdgesSegments(){
-        let edgesSegs = [];
-        console.log(this.counterClockWiseEdges);
-        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
-            let edge = this.counterClockWiseEdges[i];
-            let seg = new Segment(edge.origin.pt, edge.next.origin.pt);
-            edgesSegs.push(seg);
-        }
-        return edgesSegs;
-    }
-
-
-    // Used to test 
-    getIncidentOutEdgesOfVertexIdx(vIdx){
-        let vertex = this.vertices[vIdx];
-        console.log("CCE: "+this.counterClockWiseEdges.length);
-        console.log("CE: "+this.clockWiseEdges.length);
-        console.log("V: "+this.vertices.length);
-        let incidentEdges = [];
-        // this method is not working 
-        /*
-        let curEdge = vertex.outEdge;
-        let startEdge = curEdge;
-        while(curEdge.twin.next !== startEdge){
-            incidentEdges.push(this.getEdgeSegment(curEdge));
-            curEdge = curEdge.twin.next;
-        }
-        */
-        // this method is working
-        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
-            if(this.counterClockWiseEdges[i].origin === vertex){
-                incidentEdges.push(this.getEdgeSegment(this.counterClockWiseEdges[i]));
-            }
-        }
-        for (let i = 0; i < this.clockWiseEdges.length; i++){
-            if(this.clockWiseEdges[i].origin === vertex){
-                incidentEdges.push(this.getEdgeSegment(this.clockWiseEdges[i]));
-            }
-        }
-        console.log("Incident Outedges:");
-        console.log(incidentEdges);
-        return incidentEdges;
-    }
-
-    // This will return only the counter clockwise out edges which belongs to the bounds of the inner faces.
-    getIncidentOutEdgesOfVertex(vertex){
-        let incidentEdges = [];
-        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
-            if(this.counterClockWiseEdges[i].origin === vertex){
-                incidentEdges.push(this.counterClockWiseEdges[i]);
-            }
-        }
-        // We don't need the clockWiseEdges
-        /*
-        for (let i = 0; i < this.clockWiseEdges.length; i++){
-            if(this.clockWiseEdges[i].origin === vertex){
-                incidentEdges.push(this.clockWiseEdges[i]);
-            }
-        }
-        */
-        return incidentEdges;
-    }
-
-    // This will return also the clockWise out edges, in addition of the counter clockwise.
-    getAllIncidentOutEdgesOfVertex(vertex){
-        let incidentEdges = [];
-        //console.log("CCE: "+this.counterClockWiseEdges.length);
-        //console.log("CE: "+this.clockWiseEdges.length);
-        //console.log("V: "+this.vertices.length);
-        
-        for (let i = 0; i < this.counterClockWiseEdges.length; i++){
-            if(this.counterClockWiseEdges[i].origin === vertex){
-                //console.log("i: " + i);
-                incidentEdges.push(this.counterClockWiseEdges[i]);
-            }
-        }
-        
-        for (let i = 0; i < this.clockWiseEdges.length; i++){
-            if(this.clockWiseEdges[i].origin === vertex){
-                //console.log("j: " + i);
-                incidentEdges.push(this.clockWiseEdges[i]);
-            }
-        }
-        
-        //console.log("Incident Length: " + incidentEdges.length);
-        return incidentEdges;
-    }
-
-    // Return the common face of two vertices.
-    getVerticesCommonFace(vertex1, vertex2){
-        let incidentEdgesV1 = this.getIncidentOutEdgesOfVertex(vertex1);
-        let incidentEdgesV2 = this.getIncidentOutEdgesOfVertex(vertex2);
-        let commonFace = null;
-        let i1 = 0;
-        let i2 = 0;
-        while(i1 < incidentEdgesV1.length && commonFace === null){
-            while(i2 < incidentEdgesV2.length && commonFace === null){
-                if (incidentEdgesV1[i1].face === incidentEdgesV2[i2].face && incidentEdgesV2[i2].face !== this.exteriorFace){
-                    commonFace = incidentEdgesV1[i1].face;
-                }
-                i2 += 1;
-            }
-            i1+=1;
-        }
-        return commonFace;
-    }
-
-    // Return the edge incident to the given vertex and face.
-    getVertexIncidentEdgeToFace(vertex, face){
-        let incidentEdges = this.getIncidentOutEdgesOfVertex(vertex);
-        let edge = null;
-        for(let i=0; i < incidentEdges.length; i++){
-            if(incidentEdges[i].face === face){
-                edge = incidentEdges[i];
-                break;
-            }
-        }
-        return edge; 
-    }
-
-    getVertexOfIdx(idx){
-        return this.vertices[idx];
-    }
-
-    // Return the vertex index corresponding to one of the endpoints of the given segment.
-    getCommonVertexIdxOfSegment(segment){
-        let p1 = segment.p1;
-        let p2 = segment.p2;
-        let vertexIdx = null;
-        let p = null;
-        for (let i = 0; i < this.vertices.length; ++i) 
-        {
-            p = this.vertices[i].pt;
-            if (p1 === p || p2 === p){
-            //if(arePointsEq(segment.p1,this.vertices[i].pt) || arePointsEq(segment.p2,this.vertices[i].pt)){
-                vertexIdx = i;
-                break;
-            }
-        }
-        if(vertexIdx === null){
-            console.log("vertexIdx is null");
-        }
-        return vertexIdx;   
-    }
-
-    // Return the vertex index from the given point.
-    getVertexIdxOfPoint(point){
-        for (let i = 0; i < this.vertices.length; ++i) 
-        {
-            let p = this.vertices[i].pt;
-            if (p === point){
-                return i;
-            }
-        }
-        return null;   
-    }
-
-    // Add an edge from the given segment and a given vertex idx into the dcel.
-    // Case 1: edge between to existing vertices
-    // Case 2: edge between an existing vertex and a new one.
-    // return true if added with succes
-    // return false if intersection or if vtIdx is null
-    addEdgeFromSegment(segment, vtxIdx){
-        let added = null;
-        if(vtxIdx === null){
-            console.log("The vertex idx is null.");
-            added = false;
-        }
-        else{
-            let p1 = segment.p1;
-            let p2 = segment.p2;
-            let v1 = this.vertices[vtxIdx];
-            if (v1.pt === p1){ // p1 exsits already
-                let v2Idx = this.getVertexIdxOfPoint(p2);
-                if(v2Idx){
-                    // connect two existing vertices
-                    added = this.connectVertices(v1, this.vertices[v2Idx]);
-                }
-                else{ // p2 new vertex
-                    // connect existing vertex to a new one
-                    let v2 = new DCELVertex(p2);
-                    added = this.connectVertexToNewVertex(v1, v2);
-                }
-            }
-            else if(v1.pt === p2){ // p2 exists already
-                let v2Idx = this.getVertexIdxOfPoint(p1);
-                if(v2Idx){
-                    // connect two existing vertices
-                    added = this.connectVertices(v1, this.vertices[v2Idx]);
-                }
-                else{ // p1 new vertex
-                    // connect existing vertex to a new one
-                    let v2 = new DCELVertex(p1);
-                    added = this.connectVertexToNewVertex(v1, v2);
-                }
-            }
-        }
-        return added;
-    }
-
-    // The convex hull points are in counter clockwise order.
-    initFromConvexHullPoints(convexHullPoints){
-        let exteriorFace = new DCELFace();
-        let interiorFace = new DCELFace();
-
-        this.faces.push(interiorFace);
-        //this.faces.push(exteriorFace);
-        this.exteriorFace = exteriorFace;
-
-        const nbPoints = convexHullPoints.length;
-
-        /* Create DCEL vertices from point instances. */
-        for (let i = 0; i < nbPoints; ++i) 
-        {
-            let vertex = new DCELVertex(convexHullPoints[i]);
-            this.vertices.push(vertex);
-        }
-
-        /* Creates exterior edges and their twins, creating the square shape.
-        Also sets the face of each edge. */
-        for (let i = 0; i < nbPoints; ++i) 
-        {
-            let pStart = this.vertices[i];
-            let pStartReverse = this.vertices[(i + 1) % nbPoints];
-            let newEdge = new DCELEdge();
-            let newEdgeReverse = new DCELEdge();
-            newEdge.origin = pStart;
-            newEdgeReverse.origin = pStartReverse;
-            pStart.outEdge = newEdge;
-            pStartReverse.outEdge = newEdgeReverse;
-            newEdge.twin = newEdgeReverse;
-            newEdgeReverse.twin = newEdge;
-            newEdge.face = interiorFace;
-            newEdgeReverse.face = exteriorFace;
-            this.counterClockWiseEdges.push(newEdge);
-            this.clockWiseEdges.push(newEdgeReverse);
-        }
-
-        interiorFace.startEdge = this.counterClockWiseEdges[0];
-        exteriorFace.startEdge = this.clockWiseEdges[0];
-
-        /* Set the previous and next attributes of the edges. */
-        for (let i = 0; i < nbPoints; ++i) 
-        {
-            let prevIndex = mod((i - 1), nbPoints);
-            let nextIndex = mod((i + 1), nbPoints);
-
-            this.counterClockWiseEdges[i].prev = this.counterClockWiseEdges[prevIndex];
-            this.counterClockWiseEdges[i].next = this.counterClockWiseEdges[nextIndex];
-            this.clockWiseEdges[i].prev = this.clockWiseEdges[prevIndex];
-            this.clockWiseEdges[i].next = this.clockWiseEdges[nextIndex];
-        }   
-    }
-
-    /** 
-     * Add a new vertex and connect it to another existing vertex.
-     */
-    connectVertexToNewVertex(vertex, newVertex){
-        if(this.connectVerticesIfNotIntersect(vertex, newVertex)){
-            console.log("Connect existing vertex to new vertex");
-            let face = this.getFaceOfNewVertex(vertex, newVertex);
-            if (face === null){
-                console.log("Face is null when connecting to new vertex");
-            }
-            let v1outEdge = this.getVertexIncidentEdgeToFace(vertex, face);
-            if (v1outEdge === null){
-                console.log("v1outEdge is null when connecting to new vertex");
-            }
-            let v1inEdge = v1outEdge.prev;
-            let hedge = new DCELEdge(vertex);
-            let hedgeTwin = new DCELEdge(newVertex);
-            hedge.twin = hedgeTwin;
-            hedgeTwin.twin = hedge;
-            hedge.face = face;
-            hedgeTwin.face = face;
-            
-            hedge.next = hedgeTwin;
-            hedgeTwin.next = v1outEdge;
-            hedge.prev = v1inEdge;
-            hedgeTwin.prev = hedge;
-            v1inEdge.next = hedge;
-            v1outEdge.prev = hedgeTwin
-
-            newVertex.outEdge = hedgeTwin;
-            this.vertices.push(newVertex);
-            this.counterClockWiseEdges.push(hedge);
-            this.counterClockWiseEdges.push(hedgeTwin);
-            console.log("Done connecting existing vertex to new vertex");
-            return true;
-        }
-        else{
-            console.log("There is an intersection");
-            return false;
-        }
-    }
-
-    // To Do
-    // We need to connect first the segments having an existing vertex.
-    // Remove from the list the segment succesfully added at each step.  
-    // If intersection return false
-    // All segments added return true (eventually check if faces are all triangular).
-    /*
-    addSegments(segments){
-        for(let i = 0; i < segments.length; i++){
-            let vtxIdx = this.getCommonVertexIdxOfSegment(segments[i]);
-            if (vtxIdx !== null){
-                this.addEdgeFromSegment(segments[i], vtxIdx);
-            }
-            else{
-                console.log("The vtxIdx is null");
-            }
-        }
-    }
-    */
-
-    addSegments(segments){
-        let intersection = false;
-        let i = 0;
-        while (segments.length !== 0 && !intersection){
-            let vtxIdx = this.getCommonVertexIdxOfSegment(segments[i]);
-            if (vtxIdx !== null){
-                let added = this.addEdgeFromSegment(segments[i], vtxIdx);
-                if (!added){
-                    intersection = true;
-                    break;
-                }
-                else{
-                    removeElem(segments[i], segments);
-                    console.log("Len segments: "+segments.length);
-                }
-            }
-            i = (i+1) % segments.length;
-        }
-        return !intersection;
-    }
-    
-
-    areVerticesConnected(vertex1, vertex2){
-        let edgeExists = false;
-        let edges = this.getIncidentOutEdgesOfVertex(vertex1);
-        for (let i = 0; i < edges.length; i++){
-            if(edges[i].getTarget().pt === vertex2.pt){
-                edgeExists = true;
-            }
-        }
-        edges = this.getIncidentOutEdgesOfVertex(vertex2);
-        for (let i = 0; i < edges.length; i++){
-            if(edges[i].getTarget().pt === vertex1.pt){
-                edgeExists = true;
-            }
-        }
-        return edgeExists;   
-    }
-
-    /**
-     * Connect two existing vertices if the edge to create does not intersect 
-     * any other existing edge.
-     */
-    connectVerticesIfNotIntersect(vertex, newVertex)
-    {
-        let noIntersect = false;
-        let edgeExists = this.areVerticesConnected(vertex, newVertex);
-        
-        if(edgeExists)
-        {
-            //showNotification("Vertices are already connected", FAILURE_RED);
-            console.log("Vertices are already connected");
-        }
-        else
-        {
-            let newSegment = new Segment(vertex.pt, newVertex.pt);
-            // let newPoint = new Point(x, y);
-            // let newSegment = new Segment(points[points.length - 1], newPoint);
-            // let maxIter = points.length - 2; // the last point has already been used in newSegment
-            let intersectEdge = false;
-            let halfedges = this.counterClockWiseEdges;
-            halfedges = halfedges.concat(this.clockWiseEdges);
-            for (let i = 0; i < halfedges.length; ++i) 
-            {
-                let e = halfedges[i];
-                let existingSegment = new Segment(e.origin.pt, e.getTarget().pt);
-                intersectEdge = segmentsIntersect(newSegment, existingSegment, false);
-
-                if (intersectEdge) 
-                {
-                    // console.log("conflicting segment:", i, "->", i + 1);
-                    console.log("Cannot add a point leading to intersecting edges");
-                    //showNotification("Cannot add a point leading to intersecting edges", FAILURE_RED);
-                    break;
-                }
-            }
-
-            if (!intersectEdge) 
-            {
-                noIntersect = true;
-                console.log("A new edge is added.");
-            }
-        }
-        return noIntersect;
-
-    }
-
-    /**
-     * Connect two existing vertices of the DCEL.
-     * This will split a face in two faces.
-     */
-    connectVertices(vertex1, vertex2) 
-    {
-        if(this.connectVerticesIfNotIntersect(vertex1, vertex2)){
-            console.log("Adding edge between two existing vertices.")
-            // find the edges incident to their common face, because a vertex
-            // can be incident to several faces and also can have several outEdges
-            // the face can't be the exterior face
-            let commonFace = this.getVerticesCommonFace(vertex1, vertex2);
-            // edges originating from them and in counter clockwise sense
-            if(commonFace === null){
-                console.log("common face is null");
-            }
-            let v1outEdge = this.getVertexIncidentEdgeToFace(vertex1, commonFace);
-            let v2outEdge = this.getVertexIncidentEdgeToFace(vertex2, commonFace);
-            if(v1outEdge === null){
-                console.log("v1outEdge is null");
-            }
-            // REMARK we have to set the vertices in counter clockwise order
-            // if(v1.pt, v2.pt, v2.getTarget().pt) === LT => ok
-            // else swap cause not in counter clockwise order.
-            /*
-            if(!isLeftTurn(vertex1.pt, vertex2.pt, v2outEdge.getTarget().pt)){
-                let tmp = vertex1;
-                vertex1 = vertex2;
-                vertex2 = tmp;
-
-                tmp = v1outEdge;
-                v1outEdge = v2outEdge;
-                v2outEdge = tmp;
-            }
-            */
-            let face1 = new DCELFace();
-            let face2 = new DCELFace();
-            
-            let edge = new DCELEdge(vertex1);
-            let edgeTwin = new DCELEdge(vertex2);
-            
-            edge.twin = edgeTwin;
-            edgeTwin.twin = edge;
-           
-            // et <-> v1out
-            edgeTwin.next = v1outEdge;
-            v1outEdge.prev = edgeTwin;
-
-            let curEdge = edgeTwin;
-            while(curEdge.getTarget() !== vertex2){
-                curEdge.face = face1;
-                curEdge = curEdge.next;
-            }
-            curEdge.face = face1; // the edge before vertex2, v2in
-            // et <-> v2in
-            edgeTwin.prev = curEdge;
-            curEdge.next = edgeTwin;
-            // e <-> v2out
-            edge.next = v2outEdge;
-            v2outEdge.prev = edge;
-
-            curEdge = edge;
-            while(curEdge.getTarget() !== vertex1){
-                curEdge.face = face2;
-                curEdge = curEdge.next;
-            }
-            curEdge.face = face2; // the edge before vertex1, v1in
-            // e <-> v1in
-            curEdge.next = edge;
-            edge.prev = curEdge;
-
-            face1.startEdge = edge;
-            face2.startEdge = edgeTwin;
-
-            vertex1.outEdge = edge;
-            vertex2.outEdge = edgeTwin; 
-
-            removeElem(commonFace, this.faces);
-            this.faces.push(face1);
-            this.faces.push(face2);
-            this.counterClockWiseEdges.push(edge);
-            this.counterClockWiseEdges.push(edgeTwin);
-            console.log("Finished adding edge between two existing vertices.")
-            return true;
-        }
-        else{
-            console.log("There is an intersection");
-            return false;
-        }
-    }
-}
-
-function getEdgesToSegments(edges){
-    segs = [];
-    for (let i = 0; i < edges.length; i++){
-        let e = edges[i];
-        segs.push(new Segment(e.origin.pt, e.getTarget().pt));
-    }
-    return segs;
-}
 
 
 
@@ -764,44 +368,40 @@ function getOrientation(p1, pAngle, p2) {
     }
 }
 
+
+
+
+
 /*
 tri is a triangle
 r is a point
 return true if r is strictly in xyz else return false
 */
-function isPointInTriangle(tri , r) {
-    let orients = [];
-    let isInside = false;
-    orients.push(getOrientation(tri.p1, tri.p2, r));
-    orients.push(getOrientation(tri.p2, tri.p3, r));
-    orients.push(getOrientation(tri.p3, tri.p1, r));
-    let onLeft = 0;
-    let onRight = 0;
-    let onLine = 0;
-    for (orient of orients) {
-        if (orient === ORIENT.RIGHT) {
-            onRight += 1;
-        } else if (orient === ORIENT.ALIGNED) {
-            onLine += 1;
-        } else if (orient === ORIENT.LEFT) {
-            onLeft += 1;
-        }
-    }
-    if (onLeft === 3 || onRight === 3) {
-        isInside = true;
-    }
-  return isInside;
-}
+// function isPointInTriangle(tri , r) {
+//     let orients = [];
+//     let isInside = false;
+//     orients.push(getOrientation(tri.p1, tri.p2, r));
+//     orients.push(getOrientation(tri.p2, tri.p3, r));
+//     orients.push(getOrientation(tri.p3, tri.p1, r));
+//     let onLeft = 0;
+//     let onRight = 0;
+//     let onLine = 0;
+//     for (orient of orients) {
+//         if (orient === ORIENT.RIGHT) {
+//             onRight += 1;
+//         } else if (orient === ORIENT.ALIGNED) {
+//             onLine += 1;
+//         } else if (orient === ORIENT.LEFT) {
+//             onLeft += 1;
+//         }
+//     }
+//     if (onLeft === 3 || onRight === 3) {
+//         isInside = true;
+//     }
+//   return isInside;
+// }
 
-// return true if empty else return false
-function isTriangleEmptyOfPoints(triangle, points){
-    for(let i = 0; i < points.length; i++){
-        if(isPointInTriangle(triangle , points[i])){
-            return false;
-        }
-    }
-    return true;
-}
+
 
 /** 
  * Sort the points rtadially according to the leftmost point passed as argument.
@@ -864,64 +464,66 @@ function getGrahamScanConvexHull(points, leftMostPointIdx) {
 }
 
 
-/**
- * Performs a Graham scan on the point set in order to create both the convex hull
- * and the triangulation of the point set.
- */
-function getGrahamScanTriangulation(points, leftMostPointIdx)
-{
-    let dcel = new DCELGraph();
+// /**
+//  * Performs a Graham scan on the point set in order to create both the convex hull
+//  * and the triangulation of the point set.
+//  */
+// function getGrahamScanTriangulation(points, leftMostPointIdx)
+// {
+//     let dcel = new DCELGraph();
 
-    let convexHullPoints = [];
+//     let convexHullPoints = [];
 
-    if (points.length <= 2)
-    {
-        console.log("Not enough points to make convex hull or triangulation");
-    }
+//     if (points.length <= 2)
+//     {
+//         console.log("Not enough points to make convex hull or triangulation");
+//     }
 
-    else
-    {
-        var sortedPoints = sortPointsRadially(points, leftMostPointIdx);
-        console.log("sorted points:", sortedPoints);
-        convexHullPoints = [sortedPoints[0], sortedPoints[1]];
+//     else
+//     {
+//         var sortedPoints = sortPointsRadially(points, leftMostPointIdx);
+//         console.log("sorted points:", sortedPoints);
+//         convexHullPoints = [sortedPoints[0], sortedPoints[1]];
 
-        for (let i = 2; i < sortedPoints.length; ++i) 
-        {
-            while (isRightTurn(convexHullPoints[convexHullPoints.length - 2],
-            convexHullPoints[convexHullPoints.length - 1], sortedPoints[i])) 
-            {
-                convexHullPoints.pop();
-            }
-            convexHullPoints.push(sortedPoints[i]);
-        }
+//         for (let i = 2; i < sortedPoints.length; ++i) 
+//         {
+//             while (isRightTurn(convexHullPoints[convexHullPoints.length - 2],
+//             convexHullPoints[convexHullPoints.length - 1], sortedPoints[i])) 
+//             {
+//                 convexHullPoints.pop();
+//             }
+//             convexHullPoints.push(sortedPoints[i]);
+//         }
         
-    }
+//     }
     
-    return convexHullPoints;
-}
+//     return convexHullPoints;
+// }
 
 function getAllTriangulations(pointSet, convexHullPoints){
     let pointSetSize = pointSet.length;
     let convexHullPointsSize = convexHullPoints.length;
+    let combinator = new Combinator();
     console.log("Triangulation Faces: " + getPointSetTriangulationFacesNb(pointSetSize, convexHullPointsSize));
     console.log("Triangulation Edges: " + getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsSize));
     let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSetSize, convexHullPointsSize);
     console.log("Triangulation Inner Edges: " + triangInnerEdgesNb);
     let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
     console.log("All inner segments len: " + allInnerSegments.length);
-    let allInnerSegmentsCombinations = getCombinationsOfSizeK(allInnerSegments, triangInnerEdgesNb);
+    let allInnerSegmentsCombinations = combinator.getCombinationsOfSizeKFromList(triangInnerEdgesNb, allInnerSegments);
     console.log("Combinations len: " + allInnerSegmentsCombinations.length);
     allInnerSegmentsCombinations = getSegsCombiWithNoIntersect(allInnerSegmentsCombinations);
     console.log("Combinations with no intersection len: " + allInnerSegmentsCombinations.length);
 
     let triangulations = [];
     for(let i = 0; i < allInnerSegmentsCombinations.length; i++){
-    	let triangulation = getTrianglesFromCombi(pointSet, allInnerSegmentsCombinations[i], convexHullPoints);
+    	let triangulation = getTrianglesFromCombi(combinator, pointSet, allInnerSegmentsCombinations[i], convexHullPoints);
         console.log("TRIANGLES NB: " + triangulation.length);
         triangulations.push(triangulation);
     }
     return triangulations;
 }
+
 
 /**
 * @return [int] number of triangles/faces of a point set triangulation
@@ -930,67 +532,26 @@ function getPointSetTriangulationFacesNb(pointSetSize, convexHullPointsNb){
     return 2 * pointSetSize - convexHullPointsNb - 2;
 }
 
+
 /**
 * @return [int] number of edges of a point set triangulation
 */
 function getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsNb){
     return 3 * pointSetSize - convexHullPointsNb - 3;
 }
+
+
 /**
 * @return [int] number of inner edges of a point set triangulation
 * which is the total number of edges of the triangulation without 
 * the edges of the Convex Hull.
 */
 function getPointSetTriangulationInnerEdgesNb(pointSetSize, convexHullPointsNb){
-    let edgesNb = getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsNb)
-    return edgesNb - convexHullPointsNb // convexHullPoints = number of edges of the Convex Hull
+    let edgesNb = getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsNb);
+    return edgesNb - convexHullPointsNb; // convexHullPoints = number of edges of the Convex Hull
 }
 
-/**
-* Check if two segments have the same endpoints, 
-* if yes, they are equivalent.
-* @param [segment] seg1
-* @param [segment] seg2
-* @return [bool] true if seg1 is equivalent to seg2.
-*/
-function areSegmentsEq(seg1, seg2){
-    if((arePointsEq(seg1.p1, seg2.p1) && arePointsEq(seg1.p2, seg2.p2)) ||
-        (arePointsEq(seg1.p2, seg2.p1) && arePointsEq(seg1.p1, seg2.p2))){
-        return true;
-    }
-    return false;
-}
 
-function arePointsEq(p1, p2){
-    if (p1.x === p2.x && p1.y === p2.y){
-        return true;
-    }
-    return false;
-}
-
-function areTrianglesEq(tri1, tri2){
-	if((arePointsEq(tri1.p1, tri2.p1) || arePointsEq(tri1.p1, tri2.p2) || arePointsEq(tri1.p1, tri2.p3))
-		&& (arePointsEq(tri1.p2, tri2.p1) || arePointsEq(tri1.p2, tri2.p2) || arePointsEq(tri1.p2, tri2.p3))
-		&& (arePointsEq(tri1.p3, tri2.p1) || arePointsEq(tri1.p3, tri2.p2) || arePointsEq(tri1.p3, tri2.p3))){
-		return true;
-	}
-    return false;
-}
-
-function areSegmentsListIntersect(segments){
-    intersect = false; 
-    for(let i = 0; i < segments.length; i++){
-        for(let j = 0; j < segments.length; j++){
-            if(i !== j){
-                if(segmentsIntersect(segments[i], segments[j])){
-                    intersect = true;
-                    return intersect;
-                }
-            }
-        }
-    }
-    return intersect;
-}
 
 function getConvexHullSegs(convexHullPoints){
     let points = convexHullPoints;
@@ -1003,24 +564,25 @@ function getConvexHullSegs(convexHullPoints){
     return segments;
 }
 
-function getTrianglesFromCombi(pointSet, innerSegsCombi, convexHullPoints){
+
+function getTrianglesFromCombi(combinator, pointSet, innerSegsCombi, convexHullPoints){
     // each triangle represent a face of the triangulations
     let triangles = [];
     let segs = [];
     segs = segs.concat(innerSegsCombi);
     let convexHullSegs = getConvexHullSegs(convexHullPoints);
     segs = segs.concat(convexHullSegs);
-    let combisOfTripleSegs = getCombinationsOfSizeK(segs, 3);
+    let combisOfTripleSegs = combinator.getCombinationsOfSizeKFromList(3, segs);
     let tri1 = new Triangle(convexHullPoints[0], convexHullPoints[1], convexHullPoints[2]);
     for (let i = 0; i < combisOfTripleSegs.length; i++){
         tripleSegs = combisOfTripleSegs[i];
         let trianglePoints = getTrianglePointsFromSegments(tripleSegs[0], tripleSegs[1], tripleSegs[2]);
         if(trianglePoints !== null){
             let tri2 = new Triangle(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-            if(isTriangleEmptyOfPoints(tri2, pointSet)){ // if the triangle does not contain other triangles
+            if(! tri2.containsAny(pointSet)){ // if the triangle does not contain other triangles
                 // Special case the convex hull is a triangle and we need to ignore it.
             	if(convexHullPoints.length === 3){
-                    if(!areTrianglesEq(tri1, tri2)){
+                    if( ! tri1.equals(tri2) ){
                    	    triangles.push(trianglePoints);
                 	}
                 }
@@ -1038,46 +600,20 @@ function getTrianglesFromCombi(pointSet, innerSegsCombi, convexHullPoints){
  * Returns a triplet of points if the segments passed as argument form exactly a triangle.
  * Otherwise, returns null.
  */
-function getTrianglePointsFromSegments(seg1, seg2 , seg3){
-    let p1 = segsGetCommonPoint(seg1, seg2);
-    let p2 = segsGetCommonPoint(seg1, seg3);
-    let p3 = segsGetCommonPoint(seg2, seg3);
-    if(segsHaveCommonPoint(seg1, seg2) &&
-        segsHaveCommonPoint(seg1, seg3) &&
-        segsHaveCommonPoint(seg2, seg3) &&
-        !arePointsEq(p1,p2) &&
-        !arePointsEq(p1,p3) &&
-        !arePointsEq(p2,p3)){
+function getTrianglePointsFromSegments(seg1, seg2, seg3)
+{
+    let p1 = seg1.getCommonExtremity(seg2);
+    let p2 = seg1.getCommonExtremity(seg3);
+    let p3 = seg2.getCommonExtremity(seg3);
+
+    if(p1 !== null && p2 !== null && p3 !== null && Point.allDifferent(p1, p2, p3))
+    {
         return [p1, p2, p3];
     }
+
     return null;
 }
 
-function segsHaveCommonPoint(seg1, seg2){
-    if(arePointsEq(seg1.p1, seg2.p1) || 
-        arePointsEq(seg1.p2, seg2.p2) || 
-        arePointsEq(seg1.p1, seg2.p2) || 
-        arePointsEq(seg1.p2, seg2.p1)){
-        return true;
-    }
-    return false;
-}
-
-function segsGetCommonPoint(seg1, seg2){
-    if(arePointsEq(seg1.p1, seg2.p1)){
-        return seg1.p1;
-    }
-    else if(arePointsEq(seg1.p2, seg2.p2)){
-        return seg1.p2; 
-    }
-    else if(arePointsEq(seg1.p1, seg2.p2)){
-        return seg1.p1; 
-    }
-    else if(arePointsEq(seg1.p2, seg2.p1)){
-        return seg1.p2; 
-    }
-    return null;
-}
 
 
 /**
@@ -1088,19 +624,20 @@ function segsGetCommonPoint(seg1, seg2){
 * @param [list of points] convexHullPoints
 * @return [list of segments] innerSegments
 */
-function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints){
+function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints)
+{
     // Complexity O(n^3)
     let polygonCH = new Polygon(convexHullPoints);
     let innerSegments = []; 
-    for(p1 of pointSet){ // Browse all pair of points
-        for(p2 of pointSet){
+    for(let p1 of pointSet){ // Browse all pair of points
+        for(let p2 of pointSet){
             // If points are different, not forming a segment of CH and not already in list:
             // save the segment formed by the points in the innerSegments list. 
-            if(p1 !== p2 && !polygonCH.areSegmentPoints(p1, p2)){
+            if(! p1.equals(p2) && !polygonCH.areSegmentExtremities(p1, p2)){
                 let newSegment = new Segment(p1, p2);
                 let inList = false;
                 for (let i = 0; i < innerSegments.length; i++){
-                    if(areSegmentsEq(newSegment, innerSegments[i])){
+                    if(newSegment.equals(innerSegments[i])){
                         inList = true;
                         break;
                     }
@@ -1114,10 +651,14 @@ function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints){
     return innerSegments;
 }
 
-function getSegsCombiWithNoIntersect(segsCombinations){
+
+function getSegsCombiWithNoIntersect(segsCombinations)
+{
     segsCombis = [];
-    for(let i = 0; i < segsCombinations.length; i++){
-        if(!areSegmentsListIntersect(segsCombinations[i])){
+    for(let i = 0; i < segsCombinations.length; i++)
+    {
+        if(Segment.noIntersections(segsCombinations[i]))
+        {
             segsCombis.push(segsCombinations[i]);
         }
     }
@@ -1125,217 +666,29 @@ function getSegsCombiWithNoIntersect(segsCombinations){
 }
 
 
-// Maybe move it to utils.js
-/**
-* Class used to get combinations of size k from a list (n=list.length).
-*/
-class Combinator{
-    constructor(){
-        this.list = [];
-        this.combination = [];
-        this.combinations = [];
-        // bool combination(s) can be removed
-        this.boolCombination = [];
-        this.boolCombinations = [];
-    }
-    findCombinations(offset, k){
-        if(k === 0){
-            //console.log(this.combination);
-            //console.log(this.boolCombination);
-            this.combinations.push(Array.from(this.combination));
-            this.boolCombinations.push(Array.from(this.boolCombination)); // maybe not usefull
-            return true;
-        }
-        for(let i = offset; i <= this.list.length - k; i++){
-            this.combination.push(this.list[i]);
-            this.boolCombination[i] = true;
-            this.findCombinations(i + 1, k - 1);
-            this.combination.pop();
-            this.boolCombination[i] = false;
-        }
-    }
-    getCombinationsOfSizeKFromList(k, list){
-        if (k > list.length){
-            throw new TypeError("k should be <= to the list length.");
-            return null;
-        }
-        else{
-            this.reset();
-            for(let i = 0; i < list.length; i++){
-                this.boolCombination.push(false);
-            }
-            this.list = list;
-            this.findCombinations(0,k);
-            //console.log(this.combinations);
-            //console.log(this.boolCombinations);
-            return Array.from(this.combinations);
-       }
-   }
-    reset(){
-        this.combination = [];
-        this.combinations = [];
-        this.boolCombination = [];
-        this.boolCombinations = [];    
-    }
-}
-
-/**
-* @param [list] list
-* @return [list of lists] a list of combinations of k elements from list variable,
-* where k is going from 1 to list.length (included).
-*/
-function getAllCombinationsOf(list){
-    let combinations = [];
-    let combinator = new Combinator();
-    for(let k = 1; k <= list.length; k++){
-        let combinationsSizeK = combinator.getCombinationsOfSizeKFromList(k, list);
-        for(let i = 0; i < combinationsSizeK.length; i++){
-            combinations.push(combinationsSizeK[i]);
-        }
-    }
-    return combinations;
-}
-
-/**
-* @param [list] list
-* @return [list of lists] a list with all combinations of size k from list
-*/
-function getCombinationsOfSizeK(list, k){
-    let combinator = new Combinator();
-    let combinations = combinator.getCombinationsOfSizeKFromList(k, list);
-    return combinations;
-}
 
 
-/** 
- * Returns true if the first argument is in between the two other arguments. 
- * This method will behave as expected no matter what the order (min or max) of the bound arguments val1 and val2.
- */
-function inInterval(val, val1, val2) 
-{
-  return (val <= val1 && val >= val2) || (val >= val1 && val <= val2);
-}
-
-
-/**
- * Returns the magintude of a line segment, which is its length in the euclidean plane.
- * https://nodedangles.wordpress.com/2010/05/16/measuring-distance-from-a-point-to-a-line-segment/
- */
-function lineMagnitude(x1, y1, x2, y2) 
-{
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-}
-
-/**
- * Returns the distance from a point to a line.
- * https://nodedangles.wordpress.com/2010/05/16/measuring-distance-from-a-point-to-a-line-segment/
- */
-function pointLineDistance(px, py, x1, y1, x2, y2) 
-{
-    let distance = null;
-    let magnitude = lineMagnitude(x1, y1, x2, y2);
-
-    if (magnitude < 0.00000001) 
-    {
-        distance = 9999;
-        return distance;
-    }
-
-    let u1 = (px - x1) * (x2 - x1) + (py - y1) * (y2 - y1);
-    let u = u1 / (magnitude * magnitude);
-
-    if (u < 0.00001 || u > 1) 
-    {
-        let ix = lineMagnitude(px, py, x1, y1);
-        let iy = lineMagnitude(px, py, x2, y2);
-
-        if (ix > iy) 
-        {
-            distance = iy;
-        } 
-        else 
-        {
-            distance = ix;
-        }
-    } 
-
-    else 
-    {
-        let ix = x1 + u * (x2 - x1);
-        let iy = y1 + u * (y2 - y1);
-        distance = lineMagnitude(px, py, ix, iy);
-    }
-
-    return distance;
-}
-
-
-/** 
- * Returns true if the coordinates x and y are situated on the given segment, allowing the x and y deltas to fluctuate using
- * a given margin. 
- */
-function coordOnSegment(x, y, segment, clickMargin = POINT_RADIUS) {
-    let res = null;
-    let p1 = segment.p1;
-    let p2 = segment.p2;
-    let distance = pointLineDistance(x, y, p1.x, p1.y, p2.x, p2.y);
-
-    if ( dist(x, y, p1.x, p1.y) < POINT_RADIUS || dist(x, y, p2.x, p2.y) < POINT_RADIUS ) 
-    {
-        // console.log("same as one extreme point");
-        res = null;
-    }
-
-    // x value in segment's click margin and
-    // y value is between the segment extremities
-    else if ( inInterval(x, p1.x + clickMargin, p1.x - clickMargin) && inInterval(y, p1.y, p2.y) )
-    {
-        // console.log("x in segment's click margin");
-        res = new Point(p1.x, y);
-    }
-
-    // same y value and x value is between the segment extremities
-    else if ( inInterval(y, p1.y + clickMargin, p1.y - clickMargin) && inInterval(x, p1.x, p2.x) )
-    {
-        // console.log("y in segment's click margin");
-        res = new Point(x, p1.y);
-    } 
-
-    // inInterval(x, segment.p1.x + clickMargin, segment.p2.x - clickMargin) &&
-    // inInterval(y, segment.p1.y + clickMargin, segment.p2.y - clickMargin) &&
-    else if (distance < clickMargin) 
-    {
-        // let segmentSlope = (p2.x - p1.x)/(p2.y - p1.y);
-        // let newPtY = segmentSlope.
-        // console.log("point(x,y) is not in the segment click margin");
-        res = new Point(x, y);
-    }
-
-    return res;
-}
-
-
-function segmentsIntersect(seg1, seg2, allowAligned = true){
-  // return true if segments are intersecting, false otherwise
-  // Remark it returns true if they are overlapped entierly.
-  // return false if one common endpoint
-  let intersect = false;
-  let det1 = getOrientationDeterminant(seg1.p1, seg1.p2, seg2.p1);
-  let det2 = getOrientationDeterminant(seg1.p1, seg1.p2, seg2.p2);
-  let det3 = getOrientationDeterminant(seg2.p1, seg2.p2, seg1.p1);
-  let det4 = getOrientationDeterminant(seg2.p1, seg2.p2, seg1.p2);
-  if ((det1 * det2) < 0 && (det3 * det4) < 0) {
-    // determinants different sign in the two cases => intersection between their endpoints
-    intersect = true;
-    // console.log("INTERSECT");
-  } 
-  else if (areSegmentsEq(seg1, seg2)){
-    // segments are overlapped.
-    //console.log("OVERLAPPED");
-    intersect = true;
-  }
-  return intersect;
-}
+// function segmentsIntersect(seg1, seg2, allowAligned = true){
+//   // return true if segments are intersecting, false otherwise
+//   // Remark it returns true if they are overlapped entierly.
+//   // return false if one common endpoint
+//   let intersect = false;
+//   let det1 = getOrientationDeterminant(seg1.p1, seg1.p2, seg2.p1);
+//   let det2 = getOrientationDeterminant(seg1.p1, seg1.p2, seg2.p2);
+//   let det3 = getOrientationDeterminant(seg2.p1, seg2.p2, seg1.p1);
+//   let det4 = getOrientationDeterminant(seg2.p1, seg2.p2, seg1.p2);
+//   if ((det1 * det2) < 0 && (det3 * det4) < 0) {
+//     // determinants different sign in the two cases => intersection between their endpoints
+//     intersect = true;
+//     // console.log("INTERSECT");
+//   } 
+//   else if (seg1.equals(seg2)){
+//     // segments are overlapped.
+//     //console.log("OVERLAPPED");
+//     intersect = true;
+//   }
+//   return intersect;
+// }
 
 /** 
  * Returns true if the two segments intersect, false otherwise.
@@ -1353,27 +706,6 @@ function segmentsIntersect(seg1, seg2, allowAligned = true)
     return orientDifferent && reverseOrientDifferent;
 }
 */
-
-/** 
- * Returns true if the orientations of are different for the first segment according to each extremity of the second segment.
- * If the allow aligned parameter is false, the orientation of both segments will be considered the same and the return value
- * will thus be false.
- */
-function orientationsDifferent(seg1, seg2, allowAligned = true)
-{
-    seg1Orient1 = getOrientation(seg1.p1, seg1.p2, seg2.p1);
-    seg1Orient2 = getOrientation(seg1.p1, seg1.p2, seg2.p2);
-    //console.log(seg1Orient1);
-    //console.log(seg1Orient2);
-    seg1AlignmentDetected = (seg1Orient1 === ORIENT.ALIGNED || seg1Orient2 === ORIENT.ALIGNED);
-    
-    if (seg1AlignmentDetected && ! allowAligned)
-    { 
-        return false;
-    }
-
-    return getOrientation(seg1.p1, seg1.p2, seg2.p1) !== getOrientation(seg1.p1, seg1.p2, seg2.p2);
-}
 
 
 function pointSetInGeneralPosition(pointArray)
@@ -1423,84 +755,39 @@ function pointSetInGeneralPosition(pointArray)
 // }
 
 
-function isCompatibleTriangulations(triangulation1, triangulation2)
-{	
-	let orderedTriangulation1
-	for (let triangle of triangulaion1)
-	{
+// function isCompatibleTriangulations(triangulation1, triangulation2)
+// {	
+// 	let orderedTriangulation1
+// 	for (let triangle of triangulaion1)
+// 	{
 
-	}
+// 	}
 
-	let allSame = true;
-	for (let triangle1 of triangulation1)
-	{
-		let matchAny = false;
-		for (let triangle2 of triangulation2)
-		{
-			if (sameTriangles(triangle1, triangle2))
-			{
-				matchAny = true;
-				break;
-			}
+// 	let allSame = true;
+// 	for (let triangle1 of triangulation1)
+// 	{
+// 		let matchAny = false;
+// 		for (let triangle2 of triangulation2)
+// 		{
+// 			if (sameTriangles(triangle1, triangle2))
+// 			{
+// 				matchAny = true;
+// 				break;
+// 			}
 			
-		}
+// 		}
 
-		// we iterated on all triangles of the second list without finding the same
-		// triangle as triangle1, so the triangulations are not compatible
-		if (! matchAny)
-		{
+// 		// we iterated on all triangles of the second list without finding the same
+// 		// triangle as triangle1, so the triangulations are not compatible
+// 		if (! matchAny)
+// 		{
 
-		}
-	}
-}
+// 		}
+// 	}
+// }
+// 
+// 
 
-// get different colors in a random order
-function getHSLColors(colorsNb) {
-	// HSL: hue, saturation, lightness
-	// =HSB: hue, saturation, brightness
-	// This function return at maximum 10 000 colors
-	let hslColors = [];
-	if(colorsNb <= 100){ // this allow to have very different colors when we have a small number of colors
-		let step = Math.ceil(100/colorsNb);
-		for (let j = 0; j < colorsNb; j++) {
-			hslColors.push([j*step, 100, 100]);
-		}
-  	}
-	else{
-		let linesNb = Math.ceil(colorsNb / 100);
-		//console.log(linesNb);
-		let columnsNb = colorsNb;
-		if (colorsNb > 100) {
-			columnsNb = 100;
-		}
-		for (let i = 0; i < linesNb; i++) {
-			for (let j = 0; j < columnsNb; j++) {
-				// first element of the list is the hue
-				// and it is in purcentage not in degrees
-				// (this values gives the base color)
-				// (is used to browse the colors)
-				// second is the stuartion
-				// (high value the color is opaque)
-				// (low value the color is transparent)
-				// third is the brightness
-				// (high  value the color is very lighty)
-				// (low valeu the color is very darky)
-				hslColors.push([j, 100 - i, 100]);
-			}
-		}
-	}   
-  return shuffleList(hslColors);
-}
 
-// shuffle list
-function shuffleList(list) {
-	var j, tmp, i;
-	for (i = list.length - 1; i > 0; i--) {
-		j = Math.floor(Math.random() * (i + 1)); // random index
-		tmp = list[i];
-		list[i] = list[j];
-		list[j] = tmp;
-	}
-	return list;
-}
+
 

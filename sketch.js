@@ -7,7 +7,6 @@ const PLACEHOLDER_TEXT = "Place Points Here";
 
 
 
-
 var makeCanvas = function(p) {
 	p.points = [];
 	p.convexHullPoints = [];
