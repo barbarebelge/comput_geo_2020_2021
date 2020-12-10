@@ -10,6 +10,7 @@ class Point {
 		}
 		this.x = x;
 		this.y = y;
+		this.id = null;
 	}
 
 	equals(pt)
@@ -50,7 +51,6 @@ class Point {
 	}
 }
 
-
 class Triangle {
 	constructor(p1, p2, p3) 
 	{
@@ -75,6 +75,16 @@ class Triangle {
 		this.p2 = p2;
 		this.p3 = p3;
 		this.centroid = new Point( (p1.x + p2.x + p3.x)/3 , (p1.y + p2.y + p3.y)/3 );
+		this.id = null;
+		this.seg1 = new Segment(this.p1, this.p2);
+		this.seg2 = new Segment(this.p2, this.p3);
+		this.seg3 = new Segment(this.p3, this.p1);
+		this.segs = [this.seg1, this.seg2, this.seg3];
+		this.adjTris = null;
+	}
+
+	getSegments(){
+		return this.segs;
 	}
 
 	equals(other)
@@ -127,6 +137,50 @@ class Triangle {
 	    return false;
 	}
 
+	isAdjacentTo(tri){
+		for (let seg of this.segs){
+			if(seg.equalsToAny(tri.getSegments())){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	getAdjacentTrianglesFrom(triangles){
+		let adjTris = [];
+		for(let i = 0; i < triangles.length; i++){
+			let tri = triangles[i];
+			if(this.isAdjacentTo(tri)){
+				adjTris.push(tri);
+			}
+		}
+		this.adjTris = adjTris;
+		return adjTris;
+	}
+
+	hasValidBijectionWith(triangle){
+		let pts1 = [this.p1.id, this.p2.id, this.p3.id];
+		let pts2 = [triangle.p1.id, triangle.p2.id, triangle.p3.id];
+		let counter = 0;
+		for (let i = 0; i < pts1.length; i++){
+			if(valueEqualAny(pts1[i], pts2)){
+				counter += 1;
+			}
+		}
+		if(counter === 3){
+			return true;
+		}
+		return false;
+	}
+}
+
+function valueEqualAny(val, vals){
+	for (let i = 0; i < vals.length; i++){
+		if(val === vals[i]){
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -179,6 +233,16 @@ class Segment {
 	{
 		return (this.p1.equals(other.p1) && this.p2.equals(other.p2)) ||
 		       (this.p1.equals(other.p2) && this.p2.equals(other.p1));
+	}
+
+	equalsToAny(segList){
+		for (let other of segList)
+		{
+			if(this.equals(other)){
+				return true;
+			}
+		}
+		return false;
 	}
 
 	hasExtremity(pt)

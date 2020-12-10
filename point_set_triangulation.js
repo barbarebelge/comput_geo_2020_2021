@@ -167,3 +167,153 @@ function getSegsCombiWithNoIntersect(segsCombinations)
     return segsCombis;     
 }
 
+class CompatibleTriangulationFinder{
+	constructor(pointSet1, triangulations1, pointSet2, triangulations2){
+		this.pointSet1 = pointSet1;
+		for (let i = 0; i < this.pointSet1.length; i++){
+			this.pointSet1[i].id=i;
+		}
+		this.triangulations1 = [];
+		for (let i = 0; i < triangulations1.length; i++){
+			let triangulation = [];
+			for (let j = 0; j < triangulations1[i].length; j++){
+				let triPts = triangulations1[i][j];
+				//consol.log(triPts);
+				let tri = new Triangle(triPts[0], triPts[1], triPts[2]);
+				tri.id = j;
+				triangulation.push(tri);
+			}
+			this.triangulations1.push(triangulation);
+		}
+		this.pointSet2 = pointSet2;
+		this.triangulations2 = [];
+		for (let i = 0; i < triangulations2.length; i++){
+			let triangulation = [];
+			for (let j = 0; j < triangulations2[i].length; j++){
+				let triPts = triangulations2[i][j];
+				let tri = new Triangle(triPts[0], triPts[1], triPts[2]);
+				triangulation.push(tri);
+			}
+			this.triangulations2.push(triangulation);
+		}
+		let pointsIds = [];
+		for(let i = 0; i < pointSet2.length; i++){
+			pointsIds.push(i);
+		}
+		this.pointsIdsPerms = getPermutationsOf(pointsIds);
+		this.compatibleTriangs = null;
+	}
+
+	setNewIdsToPointset2(ids){
+		for (let i = 0; i < this.pointSet2.length; i++){
+			this.pointSet2[i].id = ids[i];
+		}
+	}
+
+	findCompatibleTriang(){
+		let bijection = null;
+		for (let i = 0; i < this.triangulations1.length; i++){
+			for (let j = 0; j < this.triangulations2.length; j++){
+				bijection = this.getCompatibleTriangsBijection(this.triangulations1[i], this.triangulations2[j]);
+				if(bijection !== null){
+					console.log("Compatible triangs: ",i, j);
+					this.compatibleTriangs = [i, j];
+					return bijection;
+				}
+			}
+		}
+		return bijection;
+	}
+
+	// tri1: triangulation1
+	// tri2: triangulation2
+	getCompatibleTriangsBijection(tri1, tri2){
+		let adjTriangles1 = [];
+		let adjTriangles2 = [];
+		let bijectedTris = []; // contains the bijection between the pointsets triangles
+		let bijection = null;
+		for (let i = 0; i < tri1.length; i++){
+			adjTriangles1.push(tri1[i].getAdjacentTrianglesFrom(tri1));
+		}
+		for (let i = 0; i < tri2.length; i++){
+			adjTriangles2.push(tri2[i].getAdjacentTrianglesFrom(tri2));
+		}
+		for (let i = 0; i < this.pointsIdsPerms.length; i++){
+			let ids = this.pointsIdsPerms[i];
+			this.setNewIdsToPointset2(ids);
+			// now make a link between the triangles with same ids for its points and its adjacent triangles points if possible
+			bijection = this.getValidBijection(tri1, tri2, adjTriangles1, adjTriangles2);
+			if(bijection !== null){
+				break;
+			}
+			
+		}
+		return bijection;
+	}
+
+	// tri1: triangulation1
+	// tri2: triangulation2
+	getValidBijection(tri1, tri2, adjTriangles1, adjTriangles2){
+		let bijectedTris = [];
+		for (let i = 0; i < tri1.length; i++){
+			let bijectedTriIdx = this.getBijectedTriangleIdx(tri1[i], tri2);
+			if(bijectedTriIdx !== null){
+				if(this.isAdjacentBijectionValid(adjTriangles1[i], adjTriangles2[bijectedTriIdx])){
+					bijectedTris.push([i, bijectedTriIdx]);
+				}
+				else{
+					return null;
+				}
+			}
+			else{
+				return null;
+			}
+		}
+		return bijectedTris;
+	}
+
+	isAdjacentBijectionValid(adjTri1, adjTri2){
+		if(adjTri1.length !== adjTri2.length){
+			return false;
+		}
+		let counter = 0;
+		for (let i = 0; i < adjTri1.length; i++){
+ 			for (let j = 0; j < adjTri2.length; j++){
+ 				if(adjTri1[i].hasValidBijectionWith(adjTri2[j])){
+ 					counter += 1;
+ 				}
+ 			}
+		}
+		if (counter === adjTri1.length){
+			return true;
+		}
+		return false;
+	}
+
+	getBijectedTriangleIdx(triangle1, tri2){
+		for (let i = 0; i < tri2.length; i++){
+			if(triangle1.hasValidBijectionWith(tri2[i])){
+				return i;
+			}
+		}
+		return null;
+	}
+
+}
+
+function getPermutationsOf(array, permutations = [], len = array.length) {
+	if (len === 1){
+		permutations.push(Array.from(array)); // make a shallow copy and save it
+	}
+	for (let i = 0; i < len; i++) {
+		getPermutationsOf(array, permutations, len - 1);
+		// swap a and b: [a, b] = [b, a];
+		if(len % 2 === 0){ // length even
+			[array[i], array[len - 1]] = [array[len - 1], array[i]]; // swap elem i with last elem
+		}
+		else{ // length odd
+			[array[0], array[len - 1]] = [array[len - 1], array[0]]; // swap first elem with last elem
+		}
+	}
+	return permutations;
+}

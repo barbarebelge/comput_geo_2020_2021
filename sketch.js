@@ -23,6 +23,7 @@ var makeCanvas = function(p) {
 	p.facesNb = 0;
 	p.expectedFacesNb = 0;
 	p.hslColors = [];
+	p.triangIdxToShow = 0;
 	p.reset = function ()
 	{
 		p.points = [];
@@ -40,6 +41,7 @@ var makeCanvas = function(p) {
 		p.facesNb = 0;
 		p.expectedFacesNb = 0;
 		p.hslColors = [];
+		p.triangIdxToShow = 0;
 		p.redraw();
 	};
 
@@ -76,8 +78,8 @@ var makeCanvas = function(p) {
 			}
 			// console.log("\nTRIANGULATION 0:\n", p.triangulations[0].length,'\n',p.triangulations[0]);
 			if(p.triangulations.length !== 0){
-				p.showColoredTriangles(p.triangulations[0], p.hslColors);
-				p.showTriangulation(p.triangulations[0]);
+				p.showColoredTriangles(p.triangulations[p.triangIdxToShow], p.hslColors);
+				p.showTriangulation(p.triangulations[p.triangIdxToShow]);
 			}
 
 			// draw the points at the end to see them better
@@ -511,18 +513,38 @@ function findCompatibleTriangulationsClicked()
 		showNotification("Computing triangulations...", NOTIF_BLUE);
 		console.log("LEFT CANVAS Triangulations Computation");
 		leftCanvas.computeTriangulations();
-		let hslColors = getHSLColors(leftCanvas.facesNb);
-		leftCanvas.hslColors = hslColors;
+		let hslColors1 = getHSLColors(leftCanvas.facesNb);
+		let hslColors2 = Array.from(hslColors1);
+		leftCanvas.hslColors = hslColors1;
 		leftCanvas.redraw();
 		console.log("RIGHT CANVAS Triangulations Computation");
 		rightCanvas.computeTriangulations();
 		if(leftCanvas.facesNb !== rightCanvas.facesNb){
 			console.log("The number of faces are different between the two point sets triangulations.");
 		}
-		rightCanvas.hslColors = hslColors;
+		rightCanvas.hslColors = hslColors2;
 		rightCanvas.redraw();
 		showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
+		let pointSet1 = leftCanvas.points;
+		let pointSet2 = rightCanvas.points;
+		let triangs1 = leftCanvas.triangulations;
+		let triangs2 = rightCanvas.triangulations;
+		let compFinder = new CompatibleTriangulationFinder(pointSet1, triangs1, pointSet2, triangs2);
+		let bijection = compFinder.findCompatibleTriang();
+		console.log("Bijection: ", bijection);
+		if(bijection !== null){
+			for (let i = 0; i < bijection.length; i++){
+				let i1 = bijection[i][0];
+				let i2 = bijection[i][1];
+				hslColors2[i2] = hslColors1[i1];
+			}
+			leftCanvas.triangIdxToShow = compFinder.compatibleTriangs[0];
+			rightCanvas.triangIdxToShow = compFinder.compatibleTriangs[1];
+		}
+		rightCanvas.hslColors = hslColors2;
+		rightCanvas.redraw();
+		leftCanvas.redraw();
 	}
 
 }
