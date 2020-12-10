@@ -159,7 +159,7 @@ var makeCanvas = function(p) {
 			if (i === p.lastClickedPointIdx) 
 			{
 			  p.strokeWeight(6);
-			  p.stroke(255, 153, 153);
+			  p.stroke(255, 100, 100);
 			  radius = POINT_RADIUS * 4;
 			} 
 			else 

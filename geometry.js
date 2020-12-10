@@ -12,7 +12,7 @@ class Point {
 		this.y = y;
 	}
 
-	equal(pt)
+	equals(pt)
 	{
 		return (this.x === pt.x) && (this.y === p2.y);
 	}
