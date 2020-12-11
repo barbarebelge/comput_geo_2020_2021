@@ -10,20 +10,22 @@ class Combinator{
         this.combinations = [];
     }
 
-    findCombinations(offset, k){
-        if(k === 0)
-        {
-            //console.log(this.combination);
-            this.combinations.push(Array.from(this.combination));
-            return true;
-        }
 
-        for(let i = offset; i <= this.list.length - k; i++)
-        {
-            this.combination.push(this.list[i]);
-            this.findCombinations(i + 1, k - 1);
-            this.combination.pop();
-        }
+    findCombination(offset, k)
+    {
+	    if(k === 0)
+	    {
+	        //console.log(this.combination);
+	        this.combinations.push(Array.from(this.combination));
+	        return true;
+	    }
+
+	    for(let i = offset; i <= this.list.length - k; i++)
+	    {
+	        this.combination.push(this.list[i]);
+	        this.findCombinations(i + 1, k - 1);
+	        this.combination.pop();
+	    }
     }
 
 	getCombinationsOfSizeKFromList(k, list)

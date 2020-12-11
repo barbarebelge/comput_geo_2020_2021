@@ -24,6 +24,8 @@ var makeCanvas = function(p) {
 	p.expectedFacesNb = 0;
 	p.hslColors = [];
 	p.triangIdxToShow = 0;
+	p.triangulationFinder = null;
+
 	p.reset = function ()
 	{
 		p.points = [];
@@ -334,6 +336,22 @@ var makeCanvas = function(p) {
 		}
 	};
 
+	p.computeNextTriangulation = function()
+	{
+		if (p.triangulationFinder === null)
+		{
+			// saves ref to the coroutine function but does not call it
+			p.triangulationFinder = getNextTriangulation(p.points, p.convexHullPoints);
+		}
+
+		p.triangulations = [p.triangulationFinder.next().value];
+		if (p.triangulations && p.triangulations.length > 0)
+		{
+			p.showTriangulation(p.triangulations[0]);
+			p.redraw();
+		}
+	};
+
 
 	/** Enable or disable point placement. */	
 	p.setPointPlacement = function (boolVal) {
@@ -519,6 +537,16 @@ function validatePointSetClicked()
 }
 
 
+function getCanvasMapping(compatibilityChecker)
+{
+	let triangulationLeft = leftCanvas.triangulations[0];
+	let triangulationRight = rightCanvas.triangulations[0];
+	let mapping = compatibilityChecker.getCompatibleTriangsBijection(triangulationLeft, triangulationRight);
+
+	return mapping; 
+}
+
+
 function findCompatibleTriangulationsClicked()
 {
 	// if both canvas have been validated successfully, compute the triangulations
@@ -527,13 +555,29 @@ function findCompatibleTriangulationsClicked()
 	{
 		showNotification("Computing triangulations...", NOTIF_BLUE);
 		console.log("LEFT CANVAS Triangulations Computation");
-		leftCanvas.computeTriangulations();
+		leftCanvas.computeNextTriangulation();
+		console.log("LEFT CANVAS triangulation:", leftCanvas.triangulations[0]);
+
 		let hslColors1 = getHSLColors(leftCanvas.facesNb);
 		let hslColors2 = Array.from(hslColors1);
 		leftCanvas.hslColors = hslColors1;
 		leftCanvas.redraw();
 		console.log("RIGHT CANVAS Triangulations Computation");
-		rightCanvas.computeTriangulations();
+
+		let pointSet1 = leftCanvas.points;
+		let pointSet2 = rightCanvas.points;
+		let triangs1 = leftCanvas.triangulations;
+		let triangs2 = rightCanvas.triangulations;
+		let compatibilityChecker = new CompatibleTriangulationFinder(pointSet1, triangs1, pointSet2, triangs2);
+
+		let canvasMapping = null;
+		while( canvasMapping === null )
+		{
+			rightCanvas.computeNextTriangulation();
+			canvasMapping = getCanvasMapping(compatibilityChecker);
+		}
+
+		// rightCanvas.computeTriangulations();
 		if(leftCanvas.facesNb !== rightCanvas.facesNb){
 			console.log("The number of faces are different between the two point sets triangulations.");
 		}
@@ -541,12 +585,8 @@ function findCompatibleTriangulationsClicked()
 		rightCanvas.redraw();
 		showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
-		let pointSet1 = leftCanvas.points;
-		let pointSet2 = rightCanvas.points;
-		let triangs1 = leftCanvas.triangulations;
-		let triangs2 = rightCanvas.triangulations;
-		let compFinder = new CompatibleTriangulationFinder(pointSet1, triangs1, pointSet2, triangs2);
-		let bijection = compFinder.findCompatibleTriang();
+		let bijection = canvasMapping;
+		// let bijection = compFinder.findCompatibleTriang();
 		console.log("Bijection: ", bijection);
 		if(bijection !== null){
 			for (let i = 0; i < bijection.length; i++){
@@ -554,8 +594,8 @@ function findCompatibleTriangulationsClicked()
 				let i2 = bijection[i][1];
 				hslColors2[i2] = hslColors1[i1];
 			}
-			leftCanvas.triangIdxToShow = compFinder.compatibleTriangs[0];
-			rightCanvas.triangIdxToShow = compFinder.compatibleTriangs[1];
+			leftCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[0];
+			rightCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[1];
 		}
 		rightCanvas.hslColors = hslColors2;
 		rightCanvas.redraw();

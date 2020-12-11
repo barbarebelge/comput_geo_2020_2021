@@ -1,6 +1,71 @@
 
 
 
+function* getCombination(list, combination, offset, k)
+{
+	let res = null;
+
+	if (k > list.length)
+	{
+		throw new TypeError("k should be <= to the list length.");
+	}
+
+    if (k === 0)
+    {
+    	res = combination.slice();
+    	console.log("yield res:", res);
+    }
+
+    else
+	{
+	    for(let i = offset; i <= list.length - k; i++)
+	    {
+	        combination.push(list[i]);
+	        let recurse = getCombination(list, combination, i + 1, k - 1);
+	        let recurseRes = recurse.next().value;
+
+	        // some recursion found a solution, so wait
+	        if (recurseRes !== null)
+	        {
+	        	yield recurseRes;
+	        }
+
+	        // recurse.next(); // if returns, then do it imediately
+	        combination.pop();
+	    }
+
+    }
+
+    return res;
+}
+
+
+
+function* getNextTriangulation(pointSet, convexHullPoints)
+{
+    let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSet.length, convexHullPoints.length);
+    let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
+
+	let combination = null;
+	let combinationCoRoutine = getCombination(allInnerSegments, [], 0, triangInnerEdgesNb); // instance of the function !!
+	let continueLoop = true;
+
+	while (continueLoop)
+	{
+		combination = combinationCoRoutine.next().value; // call the function from its current state until next yield call
+		console.log("combination:", combination);
+		if (combination!== null && combination.length > 0)
+		{
+			yield combination;
+		}
+		else
+		{
+			console.error("Empty combination received from yield");
+			continueLoop = false;
+		}
+	}
+}
+
 
 function getAllTriangulations(pointSet, convexHullPoints){
     let pointSetSize = pointSet.length;
@@ -259,6 +324,7 @@ class CompatibleTriangulationFinder
 			}
 			
 		}
+		this.compatibleTriangs = [0, 0];
 		return bijection;
 	}
 
