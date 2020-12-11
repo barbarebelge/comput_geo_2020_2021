@@ -51,3 +51,20 @@ class Combinator{
 	}
 }
 
+
+function getPermutationsOf(array, permutations = [], len = array.length) {
+	if (len === 1){
+		permutations.push(Array.from(array)); // make a shallow copy and save it
+	}
+	for (let i = 0; i < len; i++) {
+		getPermutationsOf(array, permutations, len - 1);
+		// swap a and b: [a, b] = [b, a];
+		if(len % 2 === 0){ // length even
+			[array[i], array[len - 1]] = [array[len - 1], array[i]]; // swap elem i with last elem
+		}
+		else{ // length odd
+			[array[0], array[len - 1]] = [array[len - 1], array[0]]; // swap first elem with last elem
+		}
+	}
+	return permutations;
+}

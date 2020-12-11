@@ -19,7 +19,7 @@ function getAllTriangulations(pointSet, convexHullPoints){
 
     let triangulations = [];
     for(let i = 0; i < allInnerSegmentsCombinations.length; i++){
-    	let triangulation = getTrianglesFromCombi(combinator, pointSet, allInnerSegmentsCombinations[i], convexHullPoints);
+    	let triangulation = getTrianglesFromCombi(pointSet, allInnerSegmentsCombinations[i], convexHullPoints);
         console.log("TRIANGLES NB: " + triangulation.length);
         triangulations.push(triangulation);
     }
@@ -67,35 +67,51 @@ function getConvexHullSegs(convexHullPoints){
 }
 
 
-function getTrianglesFromCombi(combinator, pointSet, innerSegsCombi, convexHullPoints){
+function getTrianglesFromCombi(pointSet, innerSegsCombi, convexHullPoints){
     // each triangle represent a face of the triangulations
     let triangles = [];
     let segs = [];
-    segs = segs.concat(innerSegsCombi);
     let convexHullSegs = getConvexHullSegs(convexHullPoints);
+
+    segs = segs.concat(innerSegsCombi);
     segs = segs.concat(convexHullSegs);
-    let combisOfTripleSegs = combinator.getCombinationsOfSizeKFromList(3, segs);
-    let tri1 = new Triangle(convexHullPoints[0], convexHullPoints[1], convexHullPoints[2]);
-    for (let i = 0; i < combisOfTripleSegs.length; i++){
-        tripleSegs = combisOfTripleSegs[i];
-        let trianglePoints = getTrianglePointsFromSegments(tripleSegs[0], tripleSegs[1], tripleSegs[2]);
-        if(trianglePoints !== null){
-            let tri2 = new Triangle(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-            if(! tri2.containsAny(pointSet)){ // if the triangle does not contain other triangles
-                // Special case the convex hull is a triangle and we need to ignore it.
-            	if(convexHullPoints.length === 3){
-                    if( ! tri1.equals(tri2) ){
-                   	    triangles.push(trianglePoints);
-                	}
-                }
-                else{
-                    triangles.push(trianglePoints);
-                }
-            }
-        }
+
+    let [seg1, seg2, seg3] = [null, null, null];
+    let trianglePoints = null;
+    let tri = null;
+
+    for (let i = 0 ; i < segs.length ; ++i)
+    {
+    	seg1 = segs[i];
+
+    	for (let j = i + 1 ; j < segs.length ; ++j)
+    	{
+    		seg2 = segs[j];
+
+    		for (let k = j + 1 ; k < segs.length ; ++k)
+    		{
+    			seg3 = segs[k];
+    			trianglePoints = getTrianglePointsFromSegments(seg1, seg2, seg3);
+
+    			if(trianglePoints !== null)
+			    {
+			        tri = new Triangle(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
+
+			    	// if the triangle cannot be further triangulated, more specifically it does not contain any other point
+			        if(! tri.containsAny(pointSet))
+			        { 
+			            triangles.push(tri); // old value: push(trianglePoints)
+			        }
+			    }
+    			
+    		}
+    	}
     }
+
     return triangles;
 }
+
+
 
 
 /**
@@ -129,27 +145,31 @@ function getTrianglePointsFromSegments(seg1, seg2, seg3)
 function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints)
 {
     // Complexity O(n^3)
-    let polygonCH = new Polygon(convexHullPoints);
+    let convexHullPolygon = new Polygon(convexHullPoints);
     let innerSegments = []; 
-    for(let p1 of pointSet){ // Browse all pair of points
-        for(let p2 of pointSet){
-            // If points are different, not forming a segment of CH and not already in list:
-            // save the segment formed by the points in the innerSegments list. 
-            if(! p1.equals(p2) && !polygonCH.areSegmentExtremities(p1, p2)){
-                let newSegment = new Segment(p1, p2);
-                let inList = false;
-                for (let i = 0; i < innerSegments.length; i++){
-                    if(newSegment.equals(innerSegments[i])){
-                        inList = true;
-                        break;
-                    }
-                }
-                if(!inList){
-                    innerSegments.push(newSegment);
-                }
+
+    let p1 = null;
+    let p2 = null;
+
+    // Browse all pair of points
+    for(let i = 0 ; i < pointSet.length ; ++i)
+    { 
+    	p1 = pointSet[i];
+
+        for(let j = i+1 ; j < pointSet.length ; ++j)
+        {
+        	p2 = pointSet[j];
+
+            // We are sure that points are different (from the nested loop start index),
+            // need to check that they form a segment of the convex hull polygon (we don't want to remove those).
+            // If not already in the list, save the segment to the innerSegments list. 
+            if(! convexHullPolygon.areSegmentExtremities(p1, p2))
+            {
+                innerSegments.push(new Segment(p1, p2));
             }
         }
     }
+
     return innerSegments;
 }
 
@@ -167,39 +187,30 @@ function getSegsCombiWithNoIntersect(segsCombinations)
     return segsCombis;     
 }
 
-class CompatibleTriangulationFinder{
-	constructor(pointSet1, triangulations1, pointSet2, triangulations2){
-		this.pointSet1 = pointSet1;
-		for (let i = 0; i < this.pointSet1.length; i++){
+
+
+class CompatibleTriangulationFinder
+{
+	constructor(firstPointSet, firstTriangulationSet, secondPointSet, secondTriangulationSet)
+	{
+		this.pointSet1 = firstPointSet;
+		this.pointSet2 = secondPointSet;
+
+		this.triangulations1 = firstTriangulationSet;
+		this.triangulations2 = secondTriangulationSet;
+
+		for (let i = 0; i < this.pointSet1.length; i++)
+		{
 			this.pointSet1[i].id=i;
 		}
-		this.triangulations1 = [];
-		for (let i = 0; i < triangulations1.length; i++){
-			let triangulation = [];
-			for (let j = 0; j < triangulations1[i].length; j++){
-				let triPts = triangulations1[i][j];
-				//consol.log(triPts);
-				let tri = new Triangle(triPts[0], triPts[1], triPts[2]);
-				tri.id = j;
-				triangulation.push(tri);
-			}
-			this.triangulations1.push(triangulation);
-		}
-		this.pointSet2 = pointSet2;
-		this.triangulations2 = [];
-		for (let i = 0; i < triangulations2.length; i++){
-			let triangulation = [];
-			for (let j = 0; j < triangulations2[i].length; j++){
-				let triPts = triangulations2[i][j];
-				let tri = new Triangle(triPts[0], triPts[1], triPts[2]);
-				triangulation.push(tri);
-			}
-			this.triangulations2.push(triangulation);
-		}
+
 		let pointsIds = [];
-		for(let i = 0; i < pointSet2.length; i++){
+
+		for(let i = 0; i < this.pointSet2.length; i++)
+		{
 			pointsIds.push(i);
 		}
+
 		this.pointsIdsPerms = getPermutationsOf(pointsIds);
 		this.compatibleTriangs = null;
 	}
@@ -301,19 +312,5 @@ class CompatibleTriangulationFinder{
 
 }
 
-function getPermutationsOf(array, permutations = [], len = array.length) {
-	if (len === 1){
-		permutations.push(Array.from(array)); // make a shallow copy and save it
-	}
-	for (let i = 0; i < len; i++) {
-		getPermutationsOf(array, permutations, len - 1);
-		// swap a and b: [a, b] = [b, a];
-		if(len % 2 === 0){ // length even
-			[array[i], array[len - 1]] = [array[len - 1], array[i]]; // swap elem i with last elem
-		}
-		else{ // length odd
-			[array[0], array[len - 1]] = [array[len - 1], array[0]]; // swap first elem with last elem
-		}
-	}
-	return permutations;
-}
+
+

@@ -66,7 +66,7 @@ var makeCanvas = function(p) {
 	    	}
 
 		    //p.showSegments(p.allInnerSegments); // TMP display
-		    if(p.allInnerSegmentsCombinations.length != 0){ // TMP display
+		    if(p.allInnerSegmentsCombinations.length !== 0){ // TMP display
 		    	p.showSegments(p.allInnerSegmentsCombinations[p.combinationIdx], "red");
 		    	// the last combination is using all the inner segments
 			}
@@ -204,32 +204,47 @@ var makeCanvas = function(p) {
 		p.pop();
 	};
 
-	p.showTriangulation = function (triangulation, color="black"){
-		for(let i = 0; i < triangulation.length; ++i){
+	p.showTriangulation = function (triangulation, color="black")
+	{
+		let tri = null;
+		let trianglePoints = null;
+
+		for(let i = 0; i < triangulation.length; ++i)
+		{
+			tri = triangulation[i];
+			trianglePoints = [tri.p1, tri.p2, tri.p3];
+			
 			for (let j = 0; j < 3 ; ++j)
 			{
-				let triangle = triangulation[i];
-				p.connectPoints(triangle[j], triangle[(j+1)%3], color, 4);
+				p.connectPoints(trianglePoints[j], trianglePoints[(j+1)%3], color, 4);
 			}
 		}
 		
+	};
+
+	p.showTriangle = function (p1, p2, p3, hslColor)
+	{
+		p.fill(hslColor[0], hslColor[1], hslColor[2]);
+		p.triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 	};
 
 	p.showColoredTriangles = function(triangles, hslColors){
 		p.push();
 		p.noStroke();
   		p.colorMode(p.HSB, 100);
-		for(let i = 0; i < triangles.length; i++){
-			let p1 = triangles[i][0];
-			let p2 = triangles[i][1];
-			let p3 = triangles[i][2];
-			let hslColor = hslColors[i];
-  			p.fill(hslColor[0], hslColor[1], hslColor[2]);
-			p.triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 
+  		let tri = null;
+		let trianglePoints = null;
+
+		for(let i = 0; i < triangles.length; ++i)
+		{
+			tri = triangles[i];
+			trianglePoints = [tri.p1, tri.p2, tri.p3];
+			p.showTriangle(tri.p1, tri.p2, tri.p3, hslColors[i]);
 		}
+
 		p.pop();
-	}
+	};
 
 	/** Draws a simple line between two points. */
 	p.connectPoints = function (pt1, pt2, color="black", strokeWeight=1) {

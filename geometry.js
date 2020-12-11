@@ -86,6 +86,7 @@ class Triangle {
 	getSegments(){
 		return this.segs;
 	}
+	
 
 	equals(other)
 	{
@@ -173,6 +174,8 @@ class Triangle {
 		return false;
 	}
 }
+
+
 
 function valueEqualAny(val, vals){
 	for (let i = 0; i < vals.length; i++){
