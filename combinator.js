@@ -11,7 +11,7 @@ class Combinator{
     }
 
 
-    findCombination(offset, k)
+    findCombinations(offset, k)
     {
 	    if(k === 0)
 	    {

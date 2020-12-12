@@ -78,12 +78,13 @@ var makeCanvas = function(p) {
 			if(p.vtxPt !== null){
 				p.showPoint(p.vtxPt, "green");
 			}
+			if(p.hslColors.length !== 0){
+				p.showColoredTriangles(p.triangulations[p.triangIdxToShow], p.hslColors);
+			}
 			// console.log("\nTRIANGULATION 0:\n", p.triangulations[0].length,'\n',p.triangulations[0]);
 			if(p.triangulations.length !== 0){
-				p.showColoredTriangles(p.triangulations[p.triangIdxToShow], p.hslColors);
 				p.showTriangulation(p.triangulations[p.triangIdxToShow]);
 			}
-
 			// draw the points at the end to see them better
 			p.textSize(12);
 		    p.showPoints();
@@ -343,10 +344,16 @@ var makeCanvas = function(p) {
 			// saves ref to the coroutine function but does not call it
 			p.triangulationFinder = getNextTriangulation(p.points, p.convexHullPoints);
 		}
-
-		p.triangulations = [p.triangulationFinder.next().value];
+		let innerSegments = p.triangulationFinder.next().value;
+		while (!Segment.noIntersections(innerSegments)){
+			innerSegments = p.triangulationFinder.next().value;
+		}
+		p.triangulations = [getTrianglesFromCombi(p.points, innerSegments, p.convexHullPoints)];
+		//console.log("Triang: ", p.triangulations[0]);
 		if (p.triangulations && p.triangulations.length > 0)
 		{
+			p.facesNb = p.triangulations[0].length;
+			p.expectedFacesNb = getPointSetTriangulationFacesNb(p.points.length, p.convexHullPoints.length);
 			p.showTriangulation(p.triangulations[0]);
 			p.redraw();
 		}
@@ -557,11 +564,6 @@ function findCompatibleTriangulationsClicked()
 		console.log("LEFT CANVAS Triangulations Computation");
 		leftCanvas.computeNextTriangulation();
 		console.log("LEFT CANVAS triangulation:", leftCanvas.triangulations[0]);
-
-		let hslColors1 = getHSLColors(leftCanvas.facesNb);
-		let hslColors2 = Array.from(hslColors1);
-		leftCanvas.hslColors = hslColors1;
-		leftCanvas.redraw();
 		console.log("RIGHT CANVAS Triangulations Computation");
 
 		let pointSet1 = leftCanvas.points;
@@ -581,10 +583,11 @@ function findCompatibleTriangulationsClicked()
 		if(leftCanvas.facesNb !== rightCanvas.facesNb){
 			console.log("The number of faces are different between the two point sets triangulations.");
 		}
-		rightCanvas.hslColors = hslColors2;
-		rightCanvas.redraw();
+		//rightCanvas.redraw();
 		showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
+		let hslColors1 = getHSLColors(leftCanvas.facesNb);
+		let hslColors2 = Array.from(hslColors1);
 		let bijection = canvasMapping;
 		// let bijection = compFinder.findCompatibleTriang();
 		console.log("Bijection: ", bijection);
@@ -597,6 +600,7 @@ function findCompatibleTriangulationsClicked()
 			leftCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[0];
 			rightCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[1];
 		}
+		leftCanvas.hslColors = hslColors1;
 		rightCanvas.hslColors = hslColors2;
 		rightCanvas.redraw();
 		leftCanvas.redraw();
