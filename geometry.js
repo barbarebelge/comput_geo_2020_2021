@@ -255,6 +255,8 @@ class Segment {
 
 	getCommonExtremity(other)
 	{
+		// console.assert(other && other !== null);
+
 	    if(this.p1.equalsAny([other.p1, other.p2]))
 	    {
 	        return this.p1;
@@ -320,8 +322,12 @@ class Segment {
 
 	}
 
-	
-	static noIntersections(segments, allowCommonExtremity = false)
+}
+
+
+class SegmentSet
+{
+	static hasIntersections(segments, allowCommonExtremity = false)
 	{
 		for (let i = 0 ; i < segments.length ; ++i)
 		{
@@ -329,14 +335,19 @@ class Segment {
 			{
 				if ( segments[i].intersects(segments[j], allowCommonExtremity) )
 				{
-					return false;
+					return true;
 				}
 			}
 		}
 
-		return true;
+		return false;
 	}
-   
+
+	static noIntersections(segments, allowCommonExtremity = false)
+	{
+		return ! this.hasIntersections(segments, allowCommonExtremity);
+	}
+
 }
 
 

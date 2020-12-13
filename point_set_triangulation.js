@@ -1,70 +1,117 @@
 
 
 
-function* getCombination(list, combination, offset, k)
+let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
 {
-	let res = null;
+	let combination = null;
+	let tmpCombination = [];
+	let pointSet = pointSetParam;
+	let convexHullPoints = convexHullPointsParam;
+	let coroutine = getNextTriangulation(); // create instance of the generator
+	let paused = true;
+	let counter = 1;
 
-	if (k > list.length)
+	function* getEdgeCombination(list, offset, k)
 	{
-		throw new TypeError("k should be <= to the list length.");
-	}
+		if (k > list.length)
+		{
+			throw new TypeError("k should be <= to the list length.");
+		}
 
-    if (k === 0)
-    {
-    	res = combination.slice();
-    	console.log("yield res:", res);
-    }
-
-    else
-	{
-	    for(let i = offset; i <= list.length - k; i++)
+	    if (k === 0)
 	    {
-	        combination.push(list[i]);
-	        let recurse = getCombination(list, combination, i + 1, k - 1);
-	        let recurseRes = recurse.next().value;
-
-	        // some recursion found a solution, so wait
-	        if (recurseRes !== null)
-	        {
-	        	yield recurseRes;
-	        }
-
-	        // recurse.next(); // if returns, then do it imediately
-	        combination.pop();
+	    	console.log("yield res:", tmpCombination);
+	    	combination = tmpCombination.slice();
+	    	paused = true;
+	    	yield;
 	    }
 
-    }
-
-    return res;
-}
-
-
-
-function* getNextTriangulation(pointSet, convexHullPoints)
-{
-    let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSet.length, convexHullPoints.length);
-    let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
-
-	let combination = null;
-	let combinationCoRoutine = getCombination(allInnerSegments, [], 0, triangInnerEdgesNb); // instance of the function !!
-	let continueLoop = true;
-
-	while (continueLoop)
-	{
-		combination = combinationCoRoutine.next().value; // call the function from its current state until next yield call
-		console.log("combination:", combination);
-		if (combination!== null && combination.length > 0)
+	    else
 		{
-			yield combination;
+		    for(let i = offset; i <= list.length - k; ++i)
+		    {
+		        tmpCombination.push(list[i]);
+		        let recurse = getEdgeCombination(list, i + 1, k - 1);
+		        recurse.next();
+
+		        // the nested call set the paused flag to true and made a yield
+		        if (paused)
+	        	{
+	        		yield;
+	        		recurse.next(); // exit the yield of the recursive call if there was one called
+        		}
+
+		        // let recurseRes = recurse.next().value;
+		        tmpCombination.pop();
+
+		        // some recursion found a solution, so wait
+	        }
+
+	    }
+
+	}
+
+
+	function* getNextTriangulation()
+	{
+	    let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSet.length, convexHullPoints.length);
+	    let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
+
+		// let combination = null;
+		let combinationCoRoutine = getEdgeCombination(allInnerSegments, 0, triangInnerEdgesNb); // instance of the function !!
+		let continueLoop = true;
+
+		counter = 100;//triangInnerEdgesNb;
+
+		while (continueLoop)
+		{
+			// call the function from its current state until next yield call
+			paused = false;
+			combinationCoRoutine.next(); // updates combination
+			console.log("combination:", combination);
+			if (combination && combination !== null && combination.length > 0)
+			{
+				// if (SegmentSet.noIntersections(combination, true))
+				// {
+					yield combination.slice();
+				// }
+
+				// counter -= 1;
+				// continueLoop = counter > 0;
+			}
+
+			else
+			{
+				console.log("Empty combination received from yield (", combination, ")");
+				yield;
+				// continueLoop = false;
+			}
+			counter -= 1;
+			continueLoop = counter > 0;
+		}
+
+
+	}
+
+
+	function next()
+	{
+		if (counter > 0)
+		{
+			return coroutine.next().value;
 		}
 		else
 		{
-			console.error("Empty combination received from yield");
-			continueLoop = false;
+			console.log("REACHED END OF GENERATOR");
+			return null;
 		}
 	}
-}
+
+	return {next};
+
+};
+
+
 
 
 function getAllTriangulations(pointSet, convexHullPoints){
@@ -185,6 +232,40 @@ function getTrianglesFromCombi(pointSet, innerSegsCombi, convexHullPoints){
  */
 function getTrianglePointsFromSegments(seg1, seg2, seg3)
 {
+	// console.assert(seg1 && seg1 !== null);
+	// console.assert(seg2 && seg2 !== null);
+	// console.assert(seg3 && seg3 !== null);
+
+	if (! seg1 || ! seg2 || ! seg3)
+	{
+		if (seg1)
+		{
+			console.log("seg1:", seg1.p1, " & ", seg1.p2);
+		}
+		else
+		{
+			console.log("seg1:", seg1);
+		}
+
+		if (seg2)
+		{
+			console.log("seg2:", seg2.p1, " & ", seg2.p2);
+		}
+		else
+		{
+			console.log("seg2:", seg2);
+		}
+
+		if (seg3)
+		{
+			console.log("seg3:", seg3.p1, " & ", seg3.p2);
+		}
+		else
+		{
+			console.log("seg3:", seg3);
+		}
+	}
+
     let p1 = seg1.getCommonExtremity(seg2);
     let p2 = seg1.getCommonExtremity(seg3);
     let p3 = seg2.getCommonExtremity(seg3);
