@@ -20,10 +20,13 @@ let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
 
 	    if (k === 0)
 	    {
-	    	console.log("yield res:", tmpCombination);
-	    	combination = tmpCombination.slice();
-	    	paused = true;
-	    	yield;
+	    	// console.log("yield res:", tmpCombination);
+	    	if (SegmentSet.noIntersections(tmpCombination))
+    		{
+	    		combination = tmpCombination.slice(); // copy tmpCombination into combination
+	    		paused = true;
+	    		yield;
+    		}
 	    }
 
 	    else
@@ -34,15 +37,16 @@ let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
 		        let recurse = getEdgeCombination(list, i + 1, k - 1);
 		        recurse.next();
 
-		        // the nested call set the paused flag to true and made a yield
-		        if (paused)
-	        	{
-	        		yield;
-	        		recurse.next(); // exit the yield of the recursive call if there was one called
-        		}
-
 		        // let recurseRes = recurse.next().value;
 		        tmpCombination.pop();
+
+        		recurse.next(); // exit the yield of the recursive call if there was one called
+
+		        // the nested call set the paused flag to true and made a yield
+		        // if (paused)
+	        	// {
+	        	// 	yield;
+        		// }
 
 		        // some recursion found a solution, so wait
 	        }
@@ -68,7 +72,7 @@ let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
 			// call the function from its current state until next yield call
 			paused = false;
 			combinationCoRoutine.next(); // updates combination
-			console.log("combination:", combination);
+			// console.log("combination:", combination);
 			if (combination && combination !== null && combination.length > 0)
 			{
 				// if (SegmentSet.noIntersections(combination, true))
