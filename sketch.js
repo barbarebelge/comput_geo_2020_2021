@@ -374,7 +374,7 @@ var makeCanvas = function(p) {
 	};
 
 	p.resetTriangulationFinder = function(){
-		p.triangulationFinder === null;
+		p.triangulationFinder = null;
 	}
 
 
@@ -593,21 +593,23 @@ function findCompatibleTriangulationsClicked()
 		let canvasMapping = null;
 		let endReached1 = false;
 		let endReached2 = false;
-		let counter = 0;
+		let counter1 = 0;
+		let counter2 = 0; 
 		while(canvasMapping === null && !endReached1)
 		{
-			counter += 1;
-			console.log("BEGIN Comparing point set 1 triangulation: ", counter, "with point set 2 triangulations.");
+			counter1 += 1;
 			endReached1 = leftCanvas.computeNextTriangulation();
 			if(!endReached1){
 				while(canvasMapping === null && !endReached2)
 				{
+					counter2 += 1;
+					console.log("Comparing point set 1 triangulation: ", counter1, "with point set 2 triangulation: ", counter2);
 					endReached2 = rightCanvas.computeNextTriangulation(); // return true when end reached, no more nexts
 					canvasMapping = getCanvasMapping(compatibilityChecker);
 				}
-				console.log("END Comparing point set 1 triangulation: ", counter, "with point set 2 triangulations.");
 				if(canvasMapping === null && endReached2){
-					//console.log("RESET TRIANG FINDER");
+					counter2 = 0;
+					endReached2 = false;
 					rightCanvas.resetTriangulationFinder();
 				}
 			}
