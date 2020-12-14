@@ -16,9 +16,6 @@ var makeCanvas = function(p) {
 	p.lastClickedPointIdx = null;
 	p.allInnerSegments = [];
 	p.allInnerSegmentsCombinations = [];
-	p.combinationIdx = null;
-	p.dcelSegments = [];
-	p.vtxPt = null;
 	p.triangulations = [];
 	p.facesNb = 0;
 	p.expectedFacesNb = 0;
@@ -36,9 +33,6 @@ var makeCanvas = function(p) {
 		p.lastClickedPointIdx = null;
 		p.allInnerSegments = [];
 		p.allInnerSegmentsCombinations = [];
-		p.combinationIdx = null;
-		p.dcelSegments = [];
-		p.vtxPt = null;
 		p.triangulations = [];
 		p.triangulationFinder = null;
 		p.facesNb = 0;
@@ -67,18 +61,6 @@ var makeCanvas = function(p) {
 	    	{
 		    	p.showConvexHull();
 	    	}
-
-		    //p.showSegments(p.allInnerSegments); // TMP display
-		    if(p.allInnerSegmentsCombinations.length !== 0){ // TMP display
-		    	p.showSegments(p.allInnerSegmentsCombinations[p.combinationIdx], "red");
-		    	// the last combination is using all the inner segments
-			}
-			if(p.dcelSegments.length !== 0){
-				p.showSegments(p.dcelSegments, "blue");
-			}
-			if(p.vtxPt !== null){
-				p.showPoint(p.vtxPt, "green");
-			}
 			if(p.hslColors.length !== 0){
 				p.showColoredTriangles(p.triangulations[p.triangIdxToShow], p.hslColors);
 			}
@@ -259,17 +241,6 @@ var makeCanvas = function(p) {
 		p.pop();
 	};
 
-	/* Draws a simple line between two points. */
-	// p.connectPoints = function (pt1, pt2) {
-	// 	// p.strokeWeight(1);
-	// 	// p.stroke(0, 0, 0);
-	// 	// p.fill("black");
-	// 	p.line(pt1.x, pt1.y, pt2.x, pt2.y);
-	// 	// p.strokeWeight(1);
-	// 	// p.noStroke();
-	// };
-
-
 	/** Draws a colored line between two convex hull points points. */
 	p.connectCHPoints = function (idx1, idx2) {
 		p.strokeWeight(4);
@@ -325,17 +296,6 @@ var makeCanvas = function(p) {
 		}
 
 		return nb_extreme_points;
-	};
-
-	/** Launches the computation of all the triangulations of the set. */
-	p.computeTriangulations = function()
-	{
-		p.triangulations = getAllTriangulations(p.points, p.convexHullPoints);
-		p.facesNb = p.triangulations[0].length;
-		p.expectedFacesNb = getPointSetTriangulationFacesNb(p.points.length, p.convexHullPoints.length);
-		if(p.facesNb !== p.expectedFacesNb){
-			console.log("Faces nb is not right, expected one: " + p.expectedFacesNb + " the current one: " +p.facesNb);
-		}
 	};
 
 	p.computeAllInnerSegments = function(){
@@ -420,36 +380,6 @@ var leftCanvas = new p5(makeCanvas, 'left-canvas');
 var rightCanvas = new p5(makeCanvas, 'right-canvas');
 rightCanvas.setPointPlacement(false);
 var convexHullSize = null; // size of the first canvas's convex hull
-
-
-// TO REMOVE used to test the Combinator class
-/*
-let combi = new Combinator();
-let l1 = ["a", "b", "c"];
-let l2 = ["a", "b", "c", "d"];
-let combis = combi.getCombinationsOfSizeKFromList(2,l1);
-console.log(combis);
-*/
-
-//  TO REMOVE used to test segmentsIntersect();
-/*
-let seg0 = new Segment(new Point(0,100), new Point(0, 0));
-let seg1 = new Segment(new Point(0, 0), new Point(0,100));
-let seg2 = new Segment(new Point(0, 0), new Point(0,100));
-let seg3 = new Segment(new Point(0,0), new Point(100,100));
-let seg4 = new Segment(new Point(0,100), new Point(100,0));
-console.log("Segs are on same line: " + segmentsIntersect(seg0, seg1, true));
-console.log("Segs are on same line: " + segmentsIntersect(seg1, seg2, true));
-console.log("Segs have a common endpoint: " + segmentsIntersect(seg1, seg3, true));
-console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg3, seg4, true));
-console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg4, seg3, true));
-console.log("-------");
-console.log("Segs are on same line: " + segmentsIntersect(seg0, seg1, false));
-console.log("Segs are on same line: " + segmentsIntersect(seg1, seg2, false));
-console.log("Segs have a common endpoint: " + segmentsIntersect(seg1, seg3, false));
-console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg3, seg4, false));
-console.log("Segs have an intersection between their endpoints: " + segmentsIntersect(seg4, seg3, false));
-*/
 
 
 function validatePointSet()
@@ -583,11 +513,7 @@ function findCompatibleTriangulationsClicked()
 	if (currentCanvasType === CANVAS_TYPE.NONE)
 	{
 		showNotification("Searching compatible triangulation...", NOTIF_BLUE);
-		console.log("Start search compatible triangulatio.");
-		//console.log("LEFT CANVAS Triangulations Computation");
-		//leftCanvas.computeNextTriangulation();
-		//console.log("LEFT CANVAS triangulation:", leftCanvas.triangulations[0]);
-		//console.log("RIGHT CANVAS Triangulations Computation");
+		console.log("Start search compatible triangulation.");
 		leftCanvas.computeAllInnerSegments();
 		rightCanvas.computeAllInnerSegments();
 
@@ -595,7 +521,7 @@ function findCompatibleTriangulationsClicked()
 		let pointSet2 = rightCanvas.points;
 		let triangs1 = leftCanvas.triangulations;
 		let triangs2 = rightCanvas.triangulations;
-		let compatibilityChecker = new CompatibleTriangulationFinder(pointSet1, triangs1, pointSet2, triangs2);
+		let compatibilityChecker = new CompatibleTriangulationFinder(pointSet1, pointSet2);
 
 		let canvasMapping = null;
 		let endReached1 = false;
@@ -622,19 +548,16 @@ function findCompatibleTriangulationsClicked()
 			}
 		}
 
-		// rightCanvas.computeTriangulations();
 		let colorsNb = leftCanvas.facesNb;
 		if(leftCanvas.facesNb < rightCanvas.facesNb){
 			colorsNb = rightCanvas.facesNb; // save the biggest number to avoid erros in display in the case of no mapping at all
 			console.log("The number of faces are different between the two point sets triangulations.");
 		}
-		//rightCanvas.redraw();
-		//showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
 		let hslColors1 = getHSLColors(colorsNb);
 		let hslColors2 = Array.from(hslColors1);
 		let bijection = canvasMapping;
-		// let bijection = compFinder.findCompatibleTriang();
+
 		console.log("Bijection: ", bijection);
 		if(bijection !== null){
 			showNotification("Compatible triangulation found.", SUCCESS_GREEN);
@@ -643,8 +566,6 @@ function findCompatibleTriangulationsClicked()
 				let i2 = bijection[i][1];
 				hslColors2[i2] = hslColors1[i1];
 			}
-			leftCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[0];
-			rightCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[1];
 		}
 		else{
 			showNotification("Compatible triangulation not found.", FAILURE_RED);

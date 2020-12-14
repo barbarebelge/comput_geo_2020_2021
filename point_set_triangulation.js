@@ -4,14 +4,14 @@
 function getSetsFinderStr(k){
     let code = "";
     let varsStr = [];
-    let varsStrList = "[";
+    let setValsStrList = "[";
     code += "function* setsFinder(list){"; // function begin
     // Add the first loop before the others
     let i = 0;
     let iStrVal = i.toString();
     let iStrVar = "i" + i.toString();
     varsStr.push(iStrVar);
-    varsStrList += "list[" + iStrVar + "],";
+    setValsStrList += "list[" + iStrVar + "],";
     let stringFor = "for (let " + iStrVar + " = " + iStrVal + " ; " + iStrVar + " < list.length ; ++"+ iStrVar +"){\n";
     code += stringFor;
     // Add the next loops
@@ -20,13 +20,13 @@ function getSetsFinderStr(k){
         let iStrVar = "i" + i.toString();
         let iStrVarPrec = varsStr[varsStr.length - 1];
         varsStr.push(iStrVar);
-        varsStrList += "list[" + iStrVar + "],";
+        setValsStrList += "list[" + iStrVar + "],";
         let stringFor = "for (let " + iStrVar + " = " + iStrVarPrec + " + 1 ; " + iStrVar + " < list.length ; ++"+ iStrVar +"){\n";
         code += stringFor;
     }
-    varsStrList = varsStrList.slice(0, varsStrList.length-1);
-    varsStrList += "]";
-    code += "yield " + varsStrList + ";"
+    setValsStrList = setValsStrList.slice(0, setValsStrList.length-1);
+    setValsStrList += "]";
+    code += "yield " + setValsStrList + ";"
     for (let i = 0; i < k; ++i){
         code += "}";
     }
@@ -34,6 +34,7 @@ function getSetsFinderStr(k){
     return code;
 }
 
+// Used to iterate the combinations of inner segments 
 let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam, allInnerSegments)
 {
 	let pointSet = pointSetParam;
@@ -57,148 +58,6 @@ let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam, 
 		}
 	}
 	return {next};
-}
-
-/*
-let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
-{
-	let combination = null;
-	let tmpCombination = [];
-	let pointSet = pointSetParam;
-	let convexHullPoints = convexHullPointsParam;
-	let coroutine = getNextTriangulation(); // create instance of the generator
-	let paused = true;
-	let counter = 1;
-
-	function* getEdgeCombination(list, offset, k)
-	{
-		if (k > list.length)
-		{
-			throw new TypeError("k should be <= to the list length.");
-		}
-
-		if (k === 0)
-		{
-			// console.log("yield res:", tmpCombination);
-			if (SegmentSet.noIntersections(tmpCombination))
-			{
-				combination = tmpCombination.slice(); // copy tmpCombination into combination
-				paused = true;
-				yield;
-			}
-		}
-
-		else
-		{
-			for(let i = offset; i <= list.length - k; ++i)
-			{
-				tmpCombination.push(list[i]);
-				let recurse = getEdgeCombination(list, i + 1, k - 1);
-				recurse.next();
-
-				// let recurseRes = recurse.next().value;
-				tmpCombination.pop();
-
-				recurse.next(); // exit the yield of the recursive call if there was one called
-
-				// the nested call set the paused flag to true and made a yield
-				// if (paused)
-				// {
-				// 	yield;
-				// }
-
-				// some recursion found a solution, so wait
-			}
-
-		}
-
-	}
-
-
-	function* getNextTriangulation()
-	{
-		let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSet.length, convexHullPoints.length);
-		let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
-
-		// let combination = null;
-		let combinationCoRoutine = getEdgeCombination(allInnerSegments, 0, triangInnerEdgesNb); // instance of the function !!
-		let continueLoop = true;
-
-		counter = 100;//triangInnerEdgesNb;
-
-		while (continueLoop)
-		{
-			// call the function from its current state until next yield call
-			paused = false;
-			combinationCoRoutine.next(); // updates combination
-			// console.log("combination:", combination);
-			if (combination && combination !== null && combination.length > 0)
-			{
-				// if (SegmentSet.noIntersections(combination, true))
-				// {
-					yield combination.slice();
-				// }
-
-				// counter -= 1;
-				// continueLoop = counter > 0;
-			}
-
-			else
-			{
-				console.log("Empty combination received from yield (", combination, ")");
-				yield;
-				// continueLoop = false;
-			}
-			counter -= 1;
-			continueLoop = counter > 0;
-		}
-
-
-	}
-
-
-	function next()
-	{
-		if (counter > 0)
-		{
-			return coroutine.next().value;
-		}
-		else
-		{
-			console.log("REACHED END OF GENERATOR");
-			return null;
-		}
-	}
-
-	return {next};
-
-};
-*/
-
-
-
-function getAllTriangulations(pointSet, convexHullPoints){
-	let pointSetSize = pointSet.length;
-	let convexHullPointsSize = convexHullPoints.length;
-	let combinator = new Combinator();
-	console.log("Triangulation Faces: " + getPointSetTriangulationFacesNb(pointSetSize, convexHullPointsSize));
-	console.log("Triangulation Edges: " + getPointSetTriangulationEdgesNb(pointSetSize, convexHullPointsSize));
-	let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSetSize, convexHullPointsSize);
-	console.log("Triangulation Inner Edges: " + triangInnerEdgesNb);
-	let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
-	console.log("All inner segments len: " + allInnerSegments.length);
-	let allInnerSegmentsCombinations = combinator.getCombinationsOfSizeKFromList(triangInnerEdgesNb, allInnerSegments);
-	console.log("Combinations len: " + allInnerSegmentsCombinations.length);
-	allInnerSegmentsCombinations = getSegsCombiWithNoIntersect(allInnerSegmentsCombinations);
-	console.log("Combinations with no intersection len: " + allInnerSegmentsCombinations.length);
-
-	let triangulations = [];
-	for(let i = 0; i < allInnerSegmentsCombinations.length; i++){
-		let triangulation = getTrianglesFromCombi(pointSet, allInnerSegmentsCombinations[i], convexHullPoints);
-		console.log("TRIANGLES NB: " + triangulation.length);
-		triangulations.push(triangulation);
-	}
-	return triangulations;
 }
 
 
@@ -383,30 +242,12 @@ function getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints)
 }
 
 
-function getSegsCombiWithNoIntersect(segsCombinations)
-{
-	segsCombis = [];
-	for(let i = 0; i < segsCombinations.length; i++)
-	{
-		if(Segment.noIntersections(segsCombinations[i]))
-		{
-			segsCombis.push(segsCombinations[i]);
-		}
-	}
-	return segsCombis;     
-}
-
-
-
 class CompatibleTriangulationFinder
 {
-	constructor(firstPointSet, firstTriangulationSet, secondPointSet, secondTriangulationSet)
+	constructor(firstPointSet, secondPointSet)
 	{
 		this.pointSet1 = firstPointSet;
 		this.pointSet2 = secondPointSet;
-
-		this.triangulations1 = firstTriangulationSet;
-		this.triangulations2 = secondTriangulationSet;
 
 		for (let i = 0; i < this.pointSet1.length; i++)
 		{
@@ -421,28 +262,12 @@ class CompatibleTriangulationFinder
 		}
 
 		this.pointsIdsPerms = getPermutationsOf(pointsIds);
-		this.compatibleTriangs = null;
 	}
 
 	setNewIdsToPointset2(ids){
 		for (let i = 0; i < this.pointSet2.length; i++){
 			this.pointSet2[i].id = ids[i];
 		}
-	}
-
-	findCompatibleTriang(){
-		let bijection = null;
-		for (let i = 0; i < this.triangulations1.length; i++){
-			for (let j = 0; j < this.triangulations2.length; j++){
-				bijection = this.getCompatibleTriangsBijection(this.triangulations1[i], this.triangulations2[j]);
-				if(bijection !== null){
-					console.log("Compatible triangs: ",i, j);
-					this.compatibleTriangs = [i, j];
-					return bijection;
-				}
-			}
-		}
-		return bijection;
 	}
 
 	// tri1: triangulation1
