@@ -338,6 +338,10 @@ var makeCanvas = function(p) {
 		}
 	};
 
+	/*
+	It returns true if a next triangulation
+	It returns false if all the triangulations were iterated
+	*/
 	p.computeNextTriangulation = function()
 	{
 		if (p.triangulationFinder === null)
@@ -352,12 +356,9 @@ var makeCanvas = function(p) {
 		{
 			innerSegments = p.triangulationFinder.next();
 		}
-
-		console.log("TRIANGULATION FROM GENERATOR:", innerSegments);
-		if (innerSegments)
-		{
+		if(innerSegments !== null){
 			p.triangulations = [getTrianglesFromCombi(p.points, innerSegments, p.convexHullPoints)];
-			//console.log("Triang: ", p.triangulations[0]);
+			//console.log("TRIANGULATION FROM GENERATOR:", innerSegments);
 			if (p.triangulations && p.triangulations.length > 0)
 			{
 				p.facesNb = p.triangulations[0].length;
@@ -365,6 +366,10 @@ var makeCanvas = function(p) {
 				p.showTriangulation(p.triangulations[0]);
 				p.redraw();
 			}
+			return true;
+		}
+		else{
+			return false;
 		}
 	};
 
@@ -582,37 +587,37 @@ function findCompatibleTriangulationsClicked()
 		let compatibilityChecker = new CompatibleTriangulationFinder(pointSet1, triangs1, pointSet2, triangs2);
 
 		let canvasMapping = null;
-		// while( canvasMapping === null )
-		// {
-		// 	rightCanvas.computeNextTriangulation();
-		// 	canvasMapping = getCanvasMapping(compatibilityChecker);
-		// }
+		while( canvasMapping === null )
+		{
+			rightCanvas.computeNextTriangulation();
+			canvasMapping = getCanvasMapping(compatibilityChecker);
+		}
 
-		// // rightCanvas.computeTriangulations();
-		// if(leftCanvas.facesNb !== rightCanvas.facesNb){
-		// 	console.log("The number of faces are different between the two point sets triangulations.");
-		// }
-		// //rightCanvas.redraw();
-		// showNotification("Computing triangulations done.", SUCCESS_GREEN);
+		// rightCanvas.computeTriangulations();
+		if(leftCanvas.facesNb !== rightCanvas.facesNb){
+			console.log("The number of faces are different between the two point sets triangulations.");
+		}
+		//rightCanvas.redraw();
+		showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
-		// let hslColors1 = getHSLColors(leftCanvas.facesNb);
-		// let hslColors2 = Array.from(hslColors1);
-		// let bijection = canvasMapping;
-		// // let bijection = compFinder.findCompatibleTriang();
-		// console.log("Bijection: ", bijection);
-		// if(bijection !== null){
-		// 	for (let i = 0; i < bijection.length; i++){
-		// 		let i1 = bijection[i][0];
-		// 		let i2 = bijection[i][1];
-		// 		hslColors2[i2] = hslColors1[i1];
-		// 	}
-		// 	leftCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[0];
-		// 	rightCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[1];
-		// }
-		// leftCanvas.hslColors = hslColors1;
-		// rightCanvas.hslColors = hslColors2;
-		// rightCanvas.redraw();
-		// leftCanvas.redraw();
+		let hslColors1 = getHSLColors(leftCanvas.facesNb);
+		let hslColors2 = Array.from(hslColors1);
+		let bijection = canvasMapping;
+		// let bijection = compFinder.findCompatibleTriang();
+		console.log("Bijection: ", bijection);
+		if(bijection !== null){
+			for (let i = 0; i < bijection.length; i++){
+				let i1 = bijection[i][0];
+				let i2 = bijection[i][1];
+				hslColors2[i2] = hslColors1[i1];
+			}
+			leftCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[0];
+			rightCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[1];
+		}
+		leftCanvas.hslColors = hslColors1;
+		rightCanvas.hslColors = hslColors2;
+		rightCanvas.redraw();
+		leftCanvas.redraw();
 	}
 
 }
