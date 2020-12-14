@@ -46,6 +46,7 @@ let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
 	let setsFinderIterator = setsFinder(allInnerSegments);
 	let yieldObject = null;
 
+	// it returns null when all the set were iterated
 	function next(){
 		yieldObject = setsFinderIterator.next();
 		if(!yieldObject.done){

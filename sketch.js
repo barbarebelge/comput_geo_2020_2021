@@ -339,8 +339,8 @@ var makeCanvas = function(p) {
 	};
 
 	/*
-	It returns true if a next triangulation
-	It returns false if all the triangulations were iterated
+	It returns false if a next triangulation
+	It returns true if all the triangulations were iterated
 	*/
 	p.computeNextTriangulation = function()
 	{
@@ -366,12 +366,16 @@ var makeCanvas = function(p) {
 				p.showTriangulation(p.triangulations[0]);
 				p.redraw();
 			}
-			return true;
-		}
-		else{
 			return false;
 		}
+		else{
+			return true;
+		}
 	};
+
+	p.resetTriangulationFinder = function(){
+		p.triangulationFinder === null;
+	}
 
 
 	/** Enable or disable point placement. */	
@@ -575,10 +579,10 @@ function findCompatibleTriangulationsClicked()
 	if (currentCanvasType === CANVAS_TYPE.NONE)
 	{
 		showNotification("Computing triangulations...", NOTIF_BLUE);
-		console.log("LEFT CANVAS Triangulations Computation");
-		leftCanvas.computeNextTriangulation();
-		console.log("LEFT CANVAS triangulation:", leftCanvas.triangulations[0]);
-		console.log("RIGHT CANVAS Triangulations Computation");
+		//console.log("LEFT CANVAS Triangulations Computation");
+		//leftCanvas.computeNextTriangulation();
+		//console.log("LEFT CANVAS triangulation:", leftCanvas.triangulations[0]);
+		//console.log("RIGHT CANVAS Triangulations Computation");
 
 		let pointSet1 = leftCanvas.points;
 		let pointSet2 = rightCanvas.points;
@@ -587,20 +591,38 @@ function findCompatibleTriangulationsClicked()
 		let compatibilityChecker = new CompatibleTriangulationFinder(pointSet1, triangs1, pointSet2, triangs2);
 
 		let canvasMapping = null;
-		while( canvasMapping === null )
+		let endReached1 = false;
+		let endReached2 = false;
+		let counter = 0;
+		while(canvasMapping === null && !endReached1)
 		{
-			rightCanvas.computeNextTriangulation();
-			canvasMapping = getCanvasMapping(compatibilityChecker);
+			counter += 1;
+			console.log("BEGIN Comparing point set 1 triangulation: ", counter, "with point set 2 triangulations.");
+			endReached1 = leftCanvas.computeNextTriangulation();
+			if(!endReached1){
+				while(canvasMapping === null && !endReached2)
+				{
+					endReached2 = rightCanvas.computeNextTriangulation(); // return true when end reached, no more nexts
+					canvasMapping = getCanvasMapping(compatibilityChecker);
+				}
+				console.log("END Comparing point set 1 triangulation: ", counter, "with point set 2 triangulations.");
+				if(canvasMapping === null && endReached2){
+					//console.log("RESET TRIANG FINDER");
+					rightCanvas.resetTriangulationFinder();
+				}
+			}
 		}
 
 		// rightCanvas.computeTriangulations();
-		if(leftCanvas.facesNb !== rightCanvas.facesNb){
+		let colorsNb = leftCanvas.facesNb;
+		if(leftCanvas.facesNb < rightCanvas.facesNb){
+			colorsNb = rightCanvas.facesNb; // save the biggest number to avoid erros in display in the case of no mapping at all
 			console.log("The number of faces are different between the two point sets triangulations.");
 		}
 		//rightCanvas.redraw();
 		showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
-		let hslColors1 = getHSLColors(leftCanvas.facesNb);
+		let hslColors1 = getHSLColors(colorsNb);
 		let hslColors2 = Array.from(hslColors1);
 		let bijection = canvasMapping;
 		// let bijection = compFinder.findCompatibleTriang();
