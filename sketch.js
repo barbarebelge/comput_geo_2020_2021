@@ -348,10 +348,10 @@ var makeCanvas = function(p) {
 
 		let innerSegments = p.triangulationFinder.next();
 
-		// while (SegmentSet.hasIntersections(innerSegments))
-		// {
-		// 	innerSegments = p.triangulationFinder.next();
-		// }
+		while (innerSegments !== null && SegmentSet.hasIntersections(innerSegments))
+		{
+			innerSegments = p.triangulationFinder.next();
+		}
 
 		console.log("TRIANGULATION FROM GENERATOR:", innerSegments);
 		if (innerSegments)
