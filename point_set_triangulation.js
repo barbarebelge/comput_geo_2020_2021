@@ -34,12 +34,11 @@ function getSetsFinderStr(k){
     return code;
 }
 
-let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam)
+let makeTriangulationGenerator = function(pointSetParam, convexHullPointsParam, allInnerSegments)
 {
 	let pointSet = pointSetParam;
 	let convexHullPoints = convexHullPointsParam;
 	let triangInnerEdgesNb = getPointSetTriangulationInnerEdgesNb(pointSet.length, convexHullPoints.length);
-	let allInnerSegments = getAllInnerSegmentsOfPointSet(pointSet, convexHullPoints);
 	let innerSegsCombi = null;
 	let setsFinderStr = getSetsFinderStr(triangInnerEdgesNb);
 	eval(setsFinderStr); // define function 

@@ -338,6 +338,10 @@ var makeCanvas = function(p) {
 		}
 	};
 
+	p.computeAllInnerSegments = function(){
+		p.allInnerSegments = getAllInnerSegmentsOfPointSet(p.points, p.convexHullPoints);
+	}
+
 	/*
 	It returns false if a next triangulation
 	It returns true if all the triangulations were iterated
@@ -347,7 +351,7 @@ var makeCanvas = function(p) {
 		if (p.triangulationFinder === null)
 		{
 			// saves ref to the coroutine function but does not call it
-			p.triangulationFinder = makeTriangulationGenerator(p.points, p.convexHullPoints);
+			p.triangulationFinder = makeTriangulationGenerator(p.points, p.convexHullPoints, p.allInnerSegments);
 		}
 
 		let innerSegments = p.triangulationFinder.next();
@@ -578,11 +582,14 @@ function findCompatibleTriangulationsClicked()
 	// of both point sets
 	if (currentCanvasType === CANVAS_TYPE.NONE)
 	{
-		showNotification("Computing triangulations...", NOTIF_BLUE);
+		showNotification("Searching compatible triangulation...", NOTIF_BLUE);
+		console.log("Start search compatible triangulatio.");
 		//console.log("LEFT CANVAS Triangulations Computation");
 		//leftCanvas.computeNextTriangulation();
 		//console.log("LEFT CANVAS triangulation:", leftCanvas.triangulations[0]);
 		//console.log("RIGHT CANVAS Triangulations Computation");
+		leftCanvas.computeAllInnerSegments();
+		rightCanvas.computeAllInnerSegments();
 
 		let pointSet1 = leftCanvas.points;
 		let pointSet2 = rightCanvas.points;
@@ -603,7 +610,7 @@ function findCompatibleTriangulationsClicked()
 				while(canvasMapping === null && !endReached2)
 				{
 					counter2 += 1;
-					console.log("Comparing point set 1 triangulation: ", counter1, "with point set 2 triangulation: ", counter2);
+					//console.log("Comparing point set 1 triangulation: ", counter1, "with point set 2 triangulation: ", counter2);
 					endReached2 = rightCanvas.computeNextTriangulation(); // return true when end reached, no more nexts
 					canvasMapping = getCanvasMapping(compatibilityChecker);
 				}
@@ -622,7 +629,7 @@ function findCompatibleTriangulationsClicked()
 			console.log("The number of faces are different between the two point sets triangulations.");
 		}
 		//rightCanvas.redraw();
-		showNotification("Computing triangulations done.", SUCCESS_GREEN);
+		//showNotification("Computing triangulations done.", SUCCESS_GREEN);
 
 		let hslColors1 = getHSLColors(colorsNb);
 		let hslColors2 = Array.from(hslColors1);
@@ -630,6 +637,7 @@ function findCompatibleTriangulationsClicked()
 		// let bijection = compFinder.findCompatibleTriang();
 		console.log("Bijection: ", bijection);
 		if(bijection !== null){
+			showNotification("Compatible triangulation found.", SUCCESS_GREEN);
 			for (let i = 0; i < bijection.length; i++){
 				let i1 = bijection[i][0];
 				let i2 = bijection[i][1];
@@ -637,6 +645,9 @@ function findCompatibleTriangulationsClicked()
 			}
 			leftCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[0];
 			rightCanvas.triangIdxToShow = compatibilityChecker.compatibleTriangs[1];
+		}
+		else{
+			showNotification("Compatible triangulation not found.", FAILURE_RED);
 		}
 		leftCanvas.hslColors = hslColors1;
 		rightCanvas.hslColors = hslColors2;
