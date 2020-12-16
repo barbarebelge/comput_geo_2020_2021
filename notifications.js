@@ -25,13 +25,6 @@ function resetNotifications() {
 function showNotification(txt, color = "black", nbMillisec = 4000) {
 
     resetNotifications();
-    // if (notifTimeout) 
-    // {
-    //     // clearTimeout(notifTimeout);
-    //     // notifTimeout = null;
-    //     resetNotifications();
-    // }
-
     var elem = document.getElementsByClassName("res-txt")[0];
     elem.innerText = txt;
     elem.style.color = color;
@@ -41,8 +34,3 @@ function showNotification(txt, color = "black", nbMillisec = 4000) {
         notifTimeout = setTimeout(function(){resetNotifications();}, nbMillisec);
     }
 }
-
-// async function showNotifificationAsync(txt, color = "black", nbMillisec = 4000)
-// {
-//     showNotification(txt, color, nbMillisec);
-// }

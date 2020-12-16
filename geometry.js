@@ -508,41 +508,6 @@ function getGrahamScanConvexHull(points, leftMostPointIdx) {
 }
 
 
-// /**
-//  * Performs a Graham scan on the point set in order to create both the convex hull
-//  * and the triangulation of the point set.
-//  */
-// function getGrahamScanTriangulation(points, leftMostPointIdx)
-// {
-//     let dcel = new DCELGraph();
-
-//     let convexHullPoints = [];
-
-//     if (points.length <= 2)
-//     {
-//         console.log("Not enough points to make convex hull or triangulation");
-//     }
-
-//     else
-//     {
-//         var sortedPoints = sortPointsRadially(points, leftMostPointIdx);
-//         console.log("sorted points:", sortedPoints);
-//         convexHullPoints = [sortedPoints[0], sortedPoints[1]];
-
-//         for (let i = 2; i < sortedPoints.length; ++i) 
-//         {
-//             while (isRightTurn(convexHullPoints[convexHullPoints.length - 2],
-//             convexHullPoints[convexHullPoints.length - 1], sortedPoints[i])) 
-//             {
-//                 convexHullPoints.pop();
-//             }
-//             convexHullPoints.push(sortedPoints[i]);
-//         }
-        
-//     }
-    
-//     return convexHullPoints;
-// }
 
 
 function pointSetInGeneralPosition(pointArray)
@@ -578,54 +543,6 @@ function pointSetInGeneralPosition(pointArray)
 
 	return true;
 }
-
-
-
-// function sameTriangles(tri1, tri2)
-// {
-// 	for (let pt of tri1)
-// 	{
-// 		if ( ! (pt.equals(tri1[0]) && pt.equals(tri1[1]) && pt.equals(tri1[2])) )
-// 		{
-// 			return false;
-// 		}
-// 	}
-// 	return true;
-// }
-
-
-// function isCompatibleTriangulations(triangulation1, triangulation2)
-// {	
-// 	let orderedTriangulation1
-// 	for (let triangle of triangulaion1)
-// 	{
-
-// 	}
-
-// 	let allSame = true;
-// 	for (let triangle1 of triangulation1)
-// 	{
-// 		let matchAny = false;
-// 		for (let triangle2 of triangulation2)
-// 		{
-// 			if (sameTriangles(triangle1, triangle2))
-// 			{
-// 				matchAny = true;
-// 				break;
-// 			}
-			
-// 		}
-
-// 		// we iterated on all triangles of the second list without finding the same
-// 		// triangle as triangle1, so the triangulations are not compatible
-// 		if (! matchAny)
-// 		{
-
-// 		}
-// 	}
-// }
-// 
-// 
 
 
 

@@ -154,39 +154,6 @@ function getTrianglesFromCombi(pointSet, innerSegsCombi, convexHullPoints){
  */
 function getTrianglePointsFromSegments(seg1, seg2, seg3)
 {
-	// console.assert(seg1 && seg1 !== null);
-	// console.assert(seg2 && seg2 !== null);
-	// console.assert(seg3 && seg3 !== null);
-
-	if (! seg1 || ! seg2 || ! seg3)
-	{
-		if (seg1)
-		{
-			console.log("seg1:", seg1.p1, " & ", seg1.p2);
-		}
-		else
-		{
-			console.log("seg1:", seg1);
-		}
-
-		if (seg2)
-		{
-			console.log("seg2:", seg2.p1, " & ", seg2.p2);
-		}
-		else
-		{
-			console.log("seg2:", seg2);
-		}
-
-		if (seg3)
-		{
-			console.log("seg3:", seg3.p1, " & ", seg3.p2);
-		}
-		else
-		{
-			console.log("seg3:", seg3);
-		}
-	}
 
 	let p1 = seg1.getCommonExtremity(seg2);
 	let p2 = seg1.getCommonExtremity(seg3);

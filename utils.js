@@ -1,6 +1,7 @@
 
 
-/** Returns a string repreesenting the type of the variable. */
+/** Returns a string representing the type of the variable.
+see https://stackoverflow.com/questions/13926213/checking-the-types-of-function-arguments-in-javascript */
 function typeOf(obj) 
 {
 	return {}.toString
